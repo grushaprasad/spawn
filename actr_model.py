@@ -1,8 +1,9 @@
 import numpy as np
 from copy import deepcopy
+import math
 
 class actr_model:
-	def __init__(self,decay, max_activation, prior_weight, time_factor, syntax_chunks, lexical_chunks, supertag_function):
+	def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, supertag_function):
 
 		self.base_count = {key:0 for key in syntax_chunks}
 
@@ -14,19 +15,25 @@ class actr_model:
 
 		self.lexical_act = {key:{key2: 0 for key2 in syntax_chunks} for key in lexical_chunks}
 
+		self.time = 0
+
 		self.decay = decay
 
 		self.max_activation = max_activation
 
-		self.prior_weight = prior_weight
+		self.noise_sd = noise_sd
 
-		self.time_factor = time_factor
+		self.lf = latency_factor
+
+		self.le = latency_exponent
 
 		self.syntax_chunks = syntax_chunks
 
 		self.lexical_chunks = lexical_chunks
 
 		self.supertag_sentence = supertag_function
+
+
 
 
 	def compute_baseact(self, tag):
@@ -37,15 +44,16 @@ class actr_model:
 		else:
 			num_total_tags = sum(self.base_count.values())
 
-			time_seq = (num_total_tags+1)-curr_tag_instance
-			time_seq = time_seq*self.time_factor   
+			#time_seq = (num_total_tags+1)-curr_tag_instance
+			#time_seq = time_seq*self.time_factor   
+			time_seq = self.time - curr_tag_instance
 			activation = np.log(sum(np.power(time_seq, -self.decay)))
 
 		return(max(0,activation))
 
 	def update_base_activation(self):
 		for tag in self.base_act:
-			self.base_act[tag] = self.prior_weight*self.compute_baseact(tag)
+			self.base_act[tag] = self.compute_baseact(tag)
 
 	def update_lexical_activation(self):
 		for word, word_dict in self.lexical_count.items():
@@ -55,16 +63,25 @@ class actr_model:
 					prob = 0
 				else:
 					prob = word_dict[tag]/word_sum
-				self.lexical_act[word][tag] += prob*self.max_activation
+				#self.lexical_act[word][tag] += prob*self.max_activation  #Why was I adding before??? 
+				self.lexical_act[word][tag] = prob*self.max_activation
+
+	def convert_to_rt(self,act_list):
+		rt = 0
+		for val in act_list:
+			rt += self.lf*math.exp(-(self.le*val))
+		return(rt)
 
 	def update_counts(self, sents):
 		num_prev_tags = sum(self.base_count.values())
 
 		for sent in sents:
 			# print(sent)
-			final_state, tags, words = self.supertag_sentence(self, sent)
+			final_state, tags, words, act_vals = self.supertag_sentence(self, sent)
+			# print(len(act_vals[0]))
+			# print(words[1], act_vals[1])
 
-			ccg_tag_list = [(words[n], tags[n]) for n in range(len(words))]
+			ccg_tag_list = [(words[n], tags[n], act_vals[n]) for n in range(len(words))]
 
 			# print(sent)
 			# print(tags)
@@ -74,10 +91,24 @@ class actr_model:
 				num_prev_tags += 1
 				word = pair[0]
 				tag = pair[1]
+				act = pair[2]
+				#print(len(act))
+				#print(word, tag, act)
 
+				# time_for_tag = 0
+				# for x in act:
+				# 	time_for_tag += self.convert_to_rt(x)
+
+				#times = [self.convert_to_rt(x) for x in act]
+				
+				time_for_tag = self.convert_to_rt(act)
+
+				self.time += time_for_tag + 0.05  #50 ms for production rule firing 
+				
 				self.lexical_count[word][tag] +=1
 				self.base_count[tag] += 1
-				self.base_instance[tag].append(num_prev_tags)
+				#self.base_instance[tag].append(num_prev_tags)
+				self.base_instance[tag].append(self.time)
 
 
 

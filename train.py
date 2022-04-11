@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 
 from actr_model import actr_model
-import functions2
+import supertagger
 
 
 random.seed(7)
@@ -49,68 +49,88 @@ train_dat = [x.strip() for x in train_dat]
 
 
 # num_sents = 5000
-num_sents = 1000
-decay = 0.5
-max_activation = 1.5
-prior_weight = 1
-# time_factor = 0.3
-time_factor = 0.05
+num_parts = 256
+global_sd = 0.5
 
-## Train EP
+# Hyperparameters that do not change
+decay = 0.5           # Standard value for ACT-R models
+max_activation = 1.5  # Standard value for ACT-R models
+latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4 from Lewis and Vasisth)
 
-for i in range(30):
-	random.seed(i)
-	np.random.seed(i)
 
-	curr_train_dat = deepcopy(train_dat)
-	random.shuffle(curr_train_dat)
 
-	curr_train_dat = curr_train_dat[:num_sents]
+for num_sents in [100, 500, 1000, 5000]:
+	print('Num sents: ', num_sents)
+	for i in range(num_parts):
+		random.seed(i)   #different seeds used for fitting the error terms than generating participants
+		np.random.seed(i)
 
-	# Train EP
-	actr_model_ep = actr_model(decay,
+		latency_factor = np.random.beta(2,6)  #prior  Englemann and Vasisth chapter. 
+		noise_sd = abs(np.random.normal(0.35, global_sd))
+
+		# noise_sd = np.random.uniform(0.2, 0.5) #prior  Englemann and Vasisth chapter (pg 64)
+
+
+		# noise_sd = np.random.uniform(1.4, 1.7) #prior  Englemann and Vasisth chapter (pg 64)
+
+
+		curr_train_dat = deepcopy(train_dat)
+		random.shuffle(curr_train_dat)
+
+		curr_train_dat = curr_train_dat[:num_sents]
+
+		random.seed(i) #reset seeds right before training to be as close to WD as possible
+		np.random.seed(i)
+
+		# Train EP
+		actr_model_ep = actr_model(decay,
+								  max_activation,
+								  noise_sd,
+								  latency_factor,
+							  	  latency_exponent,
+								  syntax_chunks_ep,
+								  lexical_chunks_ep,
+								  supertagger.supertag_sentence_ep)
+
+		# Note I am updating base activations only at the end of all training. Do I want to update after every sentence or every n sentences? (This should only affect it if I have globally ambiguous sentences ? )
+		actr_model_ep.update_counts(curr_train_dat)
+		actr_model_ep.update_base_activation()
+		actr_model_ep.update_lexical_activation()
+
+		ep_fname = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+
+		with open(ep_fname, 'wb') as f:
+			pickle.dump(actr_model_ep, f)
+
+
+		random.seed(i)  #reset seeds to be as close to EP as possible
+		np.random.seed(i)
+
+		actr_model_wd = actr_model(decay,
 							  max_activation,
-							  prior_weight,
-							  time_factor,
-							  syntax_chunks_ep,
-							  lexical_chunks_ep,
-							  functions2.supertag_sentence_ep)
-
-	actr_model_ep.update_counts(curr_train_dat)
-	actr_model_ep.update_base_activation()
-	actr_model_ep.update_lexical_activation()
-
-	ep_fname = './trained_models/ep_train%sk_tf%s_seed%s.pkl'%(str(num_sents//1000), str(time_factor), i)
-
-	with open(ep_fname, 'wb') as f:
-		pickle.dump(actr_model_ep, f)
+							  noise_sd,
+							  latency_factor,
+							  latency_exponent,
+							  syntax_chunks_wd,
+							  lexical_chunks_wd,
+							  supertagger.supertag_sentence_wd)
 
 
+		# Train WD
 
-	actr_model_wd = actr_model(decay,
-						  max_activation,
-						  prior_weight,
-						  time_factor,
-						  syntax_chunks_wd,
-						  lexical_chunks_wd,
-						  functions2.supertag_sentence_wd)
+		actr_model_wd.update_counts(curr_train_dat)
+		actr_model_wd.update_base_activation()
+		actr_model_wd.update_lexical_activation()
 
 
-	# Train WD
+		wd_fname = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
 
-	actr_model_wd.update_counts(curr_train_dat)
-	actr_model_wd.update_base_activation()
-	actr_model_wd.update_lexical_activation()
-
-
-	wd_fname = './trained_models/wd_train%sk_tf%s_seed%s.pkl'%(str(num_sents//1000), str(time_factor), i)
-
-	with open(wd_fname, 'wb') as f:
-		pickle.dump(actr_model_wd, f)
+		with open(wd_fname, 'wb') as f:
+			pickle.dump(actr_model_wd, f)
 
 
-	if i%5 == 0:
-		print('Trained %s models'%str(i+1))
+		if i%5 == 0:
+			print('Trained %s models'%str(i+1))
 
 
 

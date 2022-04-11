@@ -13,10 +13,12 @@ def convert_to_rule(state):
 		return(state['left'] + state['combinator'] + state['right'])
 
 
-def supertag_sentence_ep(actr_model, sentence):
+def supertag_sentence_ep(actr_model, sentence, print_stages=False):
 	# print(sentence)
+	end_state = {'left': 'end', 'right': '', 'combinator': ''}
 	words = sentence.split()
 	supertags = ['' for word in words]
+	act_vals = [[] for word in words] #activation values for all tags considered. 
 	goal_states = [None]
 
 	# curr_bad_tags = []
@@ -30,16 +32,19 @@ def supertag_sentence_ep(actr_model, sentence):
 
 	i = 0
 	while(i < len(words)):
-		# print('=======================')
+		
 		goal_buffer = goal_states[-1]
 		curr_word = words[i]
-		# print(curr_word)
-		# print(supertags)
+		if(print_stages):
+			print('=======================')
+			print(curr_word)
+			print(supertags)
 
 
 		poss_tags = actr_model.lexical_chunks[curr_word]['syntax']
 		poss_tags = [x for x in poss_tags if x not in curr_bad_tags[i]]
 		# poss_tags = [x for x in poss_tags if x != curr_bad_tag]
+
 		# print(curr_word, poss_tags)
 
 		j = 0
@@ -61,9 +66,11 @@ def supertag_sentence_ep(actr_model, sentence):
 
 		while(j < len(poss_tags)):
 			# print('j',j)
-			curr_tag = generate_supertag(actr_model, goal_buffer, curr_word, excluded_tags, poss_tags)   #after applying any possible type raising
+			curr_tag, curr_act = generate_supertag(actr_model, goal_buffer, curr_word, excluded_tags, poss_tags)   #after applying any possible type raising
 
 			curr_tag_chunk = actr_model.syntax_chunks[curr_tag]
+
+			act_vals[i].append(curr_act)
 
 			# print('curr_tag', curr_tag)
 			# print('curr_tag_chunk', curr_tag_chunk)
@@ -72,6 +79,13 @@ def supertag_sentence_ep(actr_model, sentence):
 			combined = combine(curr_tag_chunk, goal_buffer)
 			
 			if combined != None:  #i.e. there is a combined state
+
+				if curr_word == '.' and combined != end_state:
+					combined=False
+					# print('REACHED HERE')
+					# print(supertags)
+					break
+
 				goal_buffer = combined
 				
 				supertags[i] = curr_tag
@@ -86,6 +100,8 @@ def supertag_sentence_ep(actr_model, sentence):
 					words.insert(i, 'comp_del')
 					# print('words after', words)
 					supertags.insert(i, 'compobj_null')
+					act_vals.insert(i, [actr_model.max_activation]) #only one so max activation ? REVISIT THIS DECISION. 
+
 					new_state = combine(comp_chunk, goal_buffer)
 					curr_bad_tags.insert(i, [])
 					goal_states.append(new_state)
@@ -100,6 +116,7 @@ def supertag_sentence_ep(actr_model, sentence):
 			else:
 				excluded_tags.append(curr_tag)
 				j+=1
+				# NOTE: this is not taking into account time for reanalysis. 
 
 		# re-analysis while removing the excluding the previous tag
 		# Not sure if this is the best reanalysis strategy!
@@ -116,6 +133,11 @@ def supertag_sentence_ep(actr_model, sentence):
 				supertags.pop(i)
 				curr_bad_tags.pop(i)
 
+				# add activation to previous word
+				x = act_vals.pop(i) 
+				act_vals[i-1].extend(x) 
+
+
 				curr_bad_tags[i] = []
 
 				i-=1
@@ -128,6 +150,7 @@ def supertag_sentence_ep(actr_model, sentence):
 	if supertags[-2] in ['compobj_null']:
 		supertags.pop(-2)
 		words.pop(-2)
+		act_vals.pop(-2)  #this is algorithm error so no need to add
 
 	if supertags[-2] in ['NP_CP', 'NP_CP_null', 'NP_VoiceP', 'NP_ProgP']:
 		supertags[-2] = 'NP'
@@ -146,14 +169,15 @@ def supertag_sentence_ep(actr_model, sentence):
 
 		# print(supertags, words)
 
-	return(goal_buffer, supertags, words)
+	return(goal_buffer, supertags, words, act_vals)
 
 
-def supertag_sentence_wd(actr_model, sentence):
+def supertag_sentence_wd(actr_model, sentence, print_stages=False):
 	end_state = {'left': 'end', 'right': '', 'combinator': ''}
 	# print(sentence)
 	words = sentence.split()
 	supertags = ['' for word in words]
+	act_vals = [[] for word in words] #activation values for all tags considered.
 	goal_states = [None]
 
 	# curr_bad_tags = []
@@ -175,6 +199,11 @@ def supertag_sentence_wd(actr_model, sentence):
 		# print(i)
 		goal_buffer = goal_states[-1]
 		curr_word = words[i]
+
+		if(print_stages):
+			print('=======================')
+			print(curr_word)
+			print(goal_buffer)
 
 		# print(curr_word)
 		# print('goal_states', goal_states)
@@ -213,13 +242,18 @@ def supertag_sentence_wd(actr_model, sentence):
 		# print('bad tag for word', curr_word, curr_bad_tags[i])
 
 		while(j < len(poss_tags)):
-			curr_tag = generate_supertag(actr_model, goal_buffer, curr_word, excluded_tags, poss_tags)   #after applying any possible type raising
-
-			# print('considering tag:', curr_tag)
+			curr_tag, curr_act = generate_supertag(actr_model, goal_buffer, curr_word, excluded_tags, poss_tags)   #after applying any possible type raising
+			
 
 			curr_tag_chunk = actr_model.syntax_chunks[curr_tag]
 
 			combined = combine(curr_tag_chunk, goal_buffer)
+
+			if(print_stages):
+				print('considering tag:', curr_tag)
+				print('combined state:', combined)
+
+			act_vals[i].append(curr_act)
 			
 			if combined != None:  #i.e. there is a combined state
 
@@ -245,7 +279,7 @@ def supertag_sentence_wd(actr_model, sentence):
 
 
 					# i-1 because the CP is associated with the noun
-					cp_type = sample_cp(actr_model, curr_bad_cp[i-1])
+					cp_type, cp_act = sample_cp(actr_model, curr_bad_cp[i-1])
 					# print('cp_type', cp_type)
 					# print('curr_bad_cp', curr_bad_cp[i])
 					if cp_type != None:
@@ -254,6 +288,7 @@ def supertag_sentence_wd(actr_model, sentence):
 					if cp_type == 'compobj_null':
 						words.insert(i, 'comp_del')
 						supertags.insert(i, cp_type)
+						act_vals.insert(i, [cp_act])
 						new_state = combine(comp_chunk, goal_buffer)
 						curr_bad_tags.insert(i, [])
 						curr_bad_cp.insert(i, set())
@@ -266,6 +301,7 @@ def supertag_sentence_wd(actr_model, sentence):
 					elif cp_type == 'compsubj_null':
 						words.insert(i, 'comp_del')
 						supertags.insert(i, cp_type)
+						act_vals.insert(i, [cp_act])
 						curr_bad_tags.insert(i, [])
 						curr_bad_cp.insert(i, set())
 						curr_bad_aux.insert(i, set())
@@ -274,7 +310,7 @@ def supertag_sentence_wd(actr_model, sentence):
 						goal_states.append(new_state)
 						i+=1
 						# i-2 because aux is associated with the noun
-						aux_type = sample_aux(actr_model, curr_bad_aux[i-2])
+						aux_type, aux_act = sample_aux(actr_model, curr_bad_aux[i-2])
 
 						if aux_type != None:
 
@@ -282,6 +318,7 @@ def supertag_sentence_wd(actr_model, sentence):
 
 							words.insert(i, 'aux_del')
 							supertags.insert(i, aux_type)
+							act_vals.insert(i, [aux_act])
 							curr_bad_tags.insert(i, [])
 							curr_bad_cp.insert(i, set())
 							curr_bad_aux.insert(i, set())
@@ -318,21 +355,28 @@ def supertag_sentence_wd(actr_model, sentence):
 				# print('goal_states1', goal_states)
 				goal_states.pop(-1) # remove aux_del
 				words.pop(i)
-				supertags.pop(i)
+				bad_aux_tag = supertags.pop(i)
 				curr_bad_tags.pop(i)
 				curr_bad_cp.pop(i)
 				curr_bad_aux.pop(i)
 
+				x = act_vals.pop(i)
+				act_vals[i-1].extend(x)  # should this be i-2 ? 
+
 				curr_bad_tags[i] = set() 
-				
-				curr_bad_aux[i-2].add(aux_type)  #you want it to be for the prev noun 
+
+
+				#curr_bad_aux[i-2].add(aux_type)  #you want it to be for the prev noun 
+				curr_bad_aux[i-2].add(bad_aux_tag)
+
 				aux_type = ''
 
 				# print('curr_bad_aux 2', curr_bad_aux[i-2])
 				# if len(curr_bad_aux) == 2:
 				if len(curr_bad_aux[i-2]) == 2:
 					# curr_bad_cp.add(cp_type)   #tried all the aux, so CP doesn't work. 
-					curr_bad_cp[i-2].add(cp_type)
+					#curr_bad_cp[i-2].add(cp_type)
+					curr_bad_cp[i-2].add(supertags[i-1]) #cp would be the prev tag
 					cp_type = ''
 		
 				i -=1
@@ -353,6 +397,8 @@ def supertag_sentence_wd(actr_model, sentence):
 				curr_bad_cp.pop(i)
 				curr_bad_aux.pop(i)    #this is getting 
 
+				x = act_vals.pop(i)
+				act_vals[i-1].extend(x)
 
 
 				curr_bad_tags[i] = set() 
@@ -383,6 +429,8 @@ def supertag_sentence_wd(actr_model, sentence):
 			else:
 				curr_bad_tags[i].add(supertags[i])
 				supertags[i] = ''
+		if(print_stages):
+			print(supertags)
 		# print('supertags after',supertags)
 			# print(curr_bad_tags)
 		# print('--------')
@@ -394,10 +442,12 @@ def supertag_sentence_wd(actr_model, sentence):
 	if supertags[-2] in ['aux_pass', 'aux_prog']:
 		supertags.pop(-2)
 		words.pop(-2)
+		act_vals.pop(-2)
 
 	if supertags[-2] in ['compobj_null', 'compsubj_null']:
 		supertags.pop(-2)
 		words.pop(-2)
+		act_vals.pop(-2)
 
 	if supertags[-2]  in ['NP_CP', 'NP_CP_null']:
 		supertags[-2] = 'NP'
@@ -418,11 +468,13 @@ def supertag_sentence_wd(actr_model, sentence):
 		if supertags[intrans_ind-1] in ['aux_pass', 'aux_prog']:
 			supertags.pop(intrans_ind-1)
 			words.pop(intrans_ind-1)
+			act_vals.pop(intrans_ind-1)
 			intrans_ind-=1
 
 		if supertags[intrans_ind-1] in ['compobj_null', 'compsubj_null']:
 			supertags.pop(intrans_ind-1)
 			words.pop(intrans_ind-1)
+			act_vals.pop(intrans_ind-1)
 			intrans_ind-=1
 
 		if supertags[intrans_ind-1]  in ['NP_CP', 'NP_CP_null']:
@@ -431,7 +483,7 @@ def supertag_sentence_wd(actr_model, sentence):
 	## manually ensure that conj sentences have the correct NP type
 
 
-	return(goal_buffer, supertags, words)
+	return(goal_buffer, supertags, words, act_vals)
 
 # def supertag_sentence_wd(actr_model, sentence):
 # 	words = sentence.split()
@@ -595,12 +647,32 @@ def supertag_sentence_wd(actr_model, sentence):
 # 				# if comp not in curr_bad_cp:
 # 				return(comp)
 
+# def sample_cp(actr_model, curr_bad_cp):
+
+# 	comp_types = ['compobj_null', 'compsubj_null']
+# 	comp_types = [x for x in comp_types if x not in curr_bad_cp]
+# 	print('curr_bad_cp', curr_bad_cp)
+# 	print('possible comp_types', comp_types)
+
+# 	if len(comp_types) > 0:
+
+# 		comp_act_dict = {key:actr_model.base_act[key] for key in comp_types}
+# 		# consider adding lexical activation from nouns ??
+
+# 		if sum(comp_act_dict.values()) == 0:  
+# 			comp = np.random.choice(comp_types)
+# 		else:
+# 			probs = np.array(list(comp_act_dict.values()))/sum(comp_act_dict.values())
+# 			comp = np.random.choice(comp_types, p=probs)
+
+# 		# if comp not in curr_bad_cp:
+# 		return(comp)
+
 def sample_cp(actr_model, curr_bad_cp):
 
 	comp_types = ['compobj_null', 'compsubj_null']
+	comp_types = [x for x in comp_types if x in actr_model.syntax_chunks]  #compsubj_null not in ep
 	comp_types = [x for x in comp_types if x not in curr_bad_cp]
-	print('curr_bad_cp', curr_bad_cp)
-	print('possible comp_types', comp_types)
 
 	if len(comp_types) > 0:
 
@@ -609,31 +681,17 @@ def sample_cp(actr_model, curr_bad_cp):
 
 		if sum(comp_act_dict.values()) == 0:  
 			comp = np.random.choice(comp_types)
+			comp_act = actr_model.max_activation/len(comp_types)
 		else:
-			probs = np.array(list(comp_act_dict.values()))/sum(comp_act_dict.values())
-			comp = np.random.choice(comp_types, p=probs)
+			comp = max(comp_act_dict, key=lambda key:comp_act_dict[key])
+			comp_act = comp_act_dict[comp]
+			# probs = np.array(list(comp_act_dict.values()))/sum(comp_act_dict.values())
+			# comp = np.random.choice(comp_types, p=probs)
 
 		# if comp not in curr_bad_cp:
-		return(comp)
-
-def sample_cp(actr_model, curr_bad_cp):
-
-	comp_types = ['compobj_null', 'compsubj_null']
-	comp_types = [x for x in comp_types if x not in curr_bad_cp]
-
-	if len(comp_types) > 0:
-
-		comp_act_dict = {key:actr_model.base_act[key] for key in comp_types}
-		# consider adding lexical activation from nouns ??
-
-		if sum(comp_act_dict.values()) == 0:  
-			comp = np.random.choice(comp_types)
-		else:
-			probs = np.array(list(comp_act_dict.values()))/sum(comp_act_dict.values())
-			comp = np.random.choice(comp_types, p=probs)
-
-		# if comp not in curr_bad_cp:
-		return(comp)
+		return(comp, comp_act)
+	else:
+		return(None,None)
 
 
 def sample_aux(actr_model, curr_bad_aux):
@@ -646,12 +704,15 @@ def sample_aux(actr_model, curr_bad_aux):
 	if len(aux_types) > 0:
 		if sum(aux_act_dict.values()) == 0:  
 			aux = np.random.choice(aux_types)
+			aux_act = actr_model.max_activation/len(aux_types)
 		else:
-			probs = np.array(list(aux_act_dict.values()))/sum(aux_act_dict.values())
-			aux = np.random.choice(aux_types, p=probs)
+			aux = max(aux_act_dict, key=lambda key:aux_act_dict[key])
+			aux_act = aux_act_dict[aux]
+			# probs = np.array(list(aux_act_dict.values()))/sum(aux_act_dict.values())
+			# aux = np.random.choice(aux_types, p=probs)
 
 		# if aux not in curr_bad_aux:
-		return(aux)
+		return(aux, aux_act)
 
 # def sample_aux(actr_model, curr_bad_aux):
 # 	if len(curr_bad_aux) < 3:
@@ -704,21 +765,26 @@ def generate_supertag(actr_model, goal_buffer, word, excluded_tags, poss_tags):
 		tag = actr_model.syntax_chunks[tag_label]
 		curr_act_dict[tag_label] += actr_model.max_activation/len(valid_tags)
 
+	for tag in curr_act_dict:  #add in random noise
+		curr_act_dict[tag] += np.random.normal(0, actr_model.noise_sd)
 
-	all_tags = list(curr_act_dict.keys())
+	supertag = max(curr_act_dict, key=lambda key:curr_act_dict[key])
+	act_val = curr_act_dict[supertag]
 
-	if sum(curr_act_dict.values()) == 0:  
-		supertag = np.random.choice(all_tags)
-	else:
-		probs = np.array(list(curr_act_dict.values()))/sum(curr_act_dict.values())
-		supertag = np.random.choice(all_tags, p=probs)
+	# all_tags = list(curr_act_dict.keys())
+
+	# if sum(curr_act_dict.values()) == 0:  
+	# 	supertag = np.random.choice(all_tags)
+	# else:
+	# 	probs = np.array(list(curr_act_dict.values()))/sum(curr_act_dict.values())
+	# 	supertag = np.random.choice(all_tags, p=probs)
 
 
 	#all_tag_probs = np.array(list(curr_act_dict.values()))/sum(curr_act_dict.values())
 
 	#supertag = np.random.choice(all_tags, p=all_tag_probs)
 
-	return(supertag)
+	return(supertag, act_val)
 
 
 
@@ -827,11 +893,16 @@ def apply_all(tag, chunk=None):
 
 def nested_combine(tag, chunk, side, nested_el):
 	if nested_el == 'chunk':
-		nested = re.findall(r'(\(.*\))', chunk[side])
+		el = deepcopy(chunk[side])
+		el = el.replace(' ', '')
+		nested = re.findall(r'(\(.*\))', el)
 	else:
-		nested = re.findall(r'(\(.*\))', tag[side])
+		el = deepcopy(tag[side])
+		el = el.replace(' ', '')
+		nested = re.findall(r'(\(.*\))', el)
 
-	if len(nested) > 0:
+	#print(len(nested))
+	if len(nested) > 0 and len(nested)<5:  # < 5 is aribitrary
 
 		regex = r'(\/[A-Z]+\)$)'  #matches /XP) (so rules nested on left)
 		matched = re.findall(regex, nested[0])
@@ -894,7 +965,6 @@ def nested_combine(tag, chunk, side, nested_el):
 
 		states = [balance_parens(s) for s in states]
 
-
 		states = [s for s in states if len(s) > 0]
 		states = [s[1:] if s[0] in ['\\', '/'] else s for s in states]
 		states = [s[:-1] if s[-1] in ['\\', '/'] else s for s in states]
@@ -910,22 +980,31 @@ def nested_combine(tag, chunk, side, nested_el):
 		# 	states[-1] = states[-1][:-1]
 		
 		
-		if len(states) > 3:   # I don't think I need this??
-			ind = 0
-			first_state = ''
+		if len(states) > 3:   # I don't think I need this for the simple grammar??
 
-			for i, item in enumerate(states):
-				if item == combinator:
-					ind = i
-					break
-				else:
-					first_state += item
+			
+			# TO DO: Deal with this corner case properly. Right now I am ignoring this because this only happens in cases where the model is going down a horribly wrong path and has many nested rules. 
 
-			second_state = ''
-			for i in range(ind, len(states)):
-				second_state += states[i]
+			# But this can change depending on if I have more complex grammars later. 
+			# print('REACHED GREATER THAN 3')
+			return(None)
 
-			states = [first_state, second_state]
+
+			# ind = 0
+			# first_state = ''
+			# for i, item in enumerate(states):
+			# 	if item == combinator:
+			# 		ind = i
+			# 		break
+			# 	else:
+			# 		first_state += item
+
+			# second_state = ''
+			# for i in range(ind, len(states)):
+			# 	second_state += states[i]
+
+			# states = [first_state, second_state]
+			# print('states greater than 3', states)
 
 
 
@@ -1008,7 +1087,6 @@ def combine(tag, chunk):
 		return(combined)
 
 	else:  #try nesting
-		
 		nested_comb = nested_combine(tag,  chunk, side='right', nested_el='chunk')
 
 
@@ -1089,7 +1167,7 @@ def train(actr_model, model_type, sents):
 	for i,sent in enumerate(sents):
 		# curr_tag_list = tags[i].split()
 
-		final_state, tags, words = functions2.supertag_sentence_wd(actr_model, sents)
+		final_state, tags, words = supertag_sentence_wd(actr_model, sents)
 
 
 		ccg_tag_list = [(words[n], tags[n]) for n in range(len(word_list))]
@@ -1129,10 +1207,15 @@ def print_states(tag_list, word_list):
 
 
 
-tag = {'left': '(TP\\DP)', 'right': 'DP', 'combinator': '/'}
+# tag = {'left': '(TP\\DP)', 'right': 'DP', 'combinator': '/'}
 
-chunk = {'left': ' (TP/(TP\\DP))', 'right': '', 'combinator': ''}
+# chunk = {'left': ' (TP/(TP\\DP))', 'right': '', 'combinator': ''}
 
+
+
+# tag_list = ['Det', 'NP_CP', 'compsubj', 'aux_pass', 'Vt_pass', 'Prep', 'Det', 'NP', 'Vt_act', 'Det', 'NP', '.']
+
+# word_list = ['the', 'defendant', 'who', 'was', 'examined', 'by', 'the', 'lawyer', 'liked', 'the', 'cat', 'eos']
 
 
 # chunk = {'left': 'TP', 'right': '(TP\\DP)', 'combinator': '/'}

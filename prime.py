@@ -23,19 +23,44 @@ print('HELLO FROPPY')
 # ntrain_sents = 1000
 
 
-train_fname_ep = './trained_models/ep_train1k_tf0.05_'
-train_fname_wd = './trained_models/wd_train1k_tf0.05_'
+# train_fname_ep = './trained_models/ep_train1k_'
+# train_fname_wd = './trained_models/wd_train1k_'
 
 
-prime_fname_ep = './predictions/ep_train1k_tf0.05.tsv'
-prime_fname_wd = './predictions/wd_train1k_tf0.05.tsv'
+# prime_fname_ep = './predictions/ep_train1k.csv'
+# prime_fname_wd = './predictions/wd_train1k.csv'
+
+
+# prime_fname_ep = './predictions/ep_train1k.csv'
+# prime_fname_wd = './predictions/wd_train1k.csv'
+
+
+sd = 0.5
 
 ntrain_sents = 1000
+# ntrain_sents = 5000
+num_parts = 256
+# num_parts = 100
+
+fname = './trained_models/wd_train0.1k_sd1.5_part26.pkl'
+with open(fname, 'rb') as f:
+	actr_model_wd = pickle.load(f)
 
 
-# with open(train_fname_ep, 'rb') as f:
-# 	actr_model_ep = pickle.load(f)
+# print(actr_model_ep.lexical_act['examined'])
 
+# print(actr_model_ep.base_act['Vt_pass'])
+# print(actr_model_ep.base_act['Vt_act'])
+
+# num_passive = 0
+
+# for i in range(50):
+# 	goal_buffer, supertags, words, act_vals = actr_model_wd.supertag_sentence(actr_model_ep, 'the girl being scratched by the cat enjoyed the sunny afternoon .')	
+
+# 	if supertags[-1] == 'Vt_pass':
+# 		num_passive += 1
+
+# print(num_passive)
 
 # with open(train_fname_wd, 'rb') as f:
 # 	actr_model_wd = pickle.load(f)
@@ -47,31 +72,31 @@ sents = [
 		 'the lawyer examined the defendant .',
 		 'the lawyer arrived at the palace .',
 		 'the lawyer sang beautifully .',
-		 'the lawyer examined by the defendant liked the unreliable cat .',
+		 'the lawyer examined by the defendant loved the unreliable cat .',
 		 'the lawyer examined by the defendant was unreliable .',
 		 'the lawyer examined by the defendant arrived at the palace .',
 		 'the lawyer examined by the defendant sang beautifully .',
-		 'the lawyer being examined by the defendant liked the unreliable cat .',
+		 'the lawyer being examined by the defendant loved the unreliable cat .',
 		 'the lawyer being examined by the defendant was unreliable .',
 		 'the lawyer being examined by the defendant arrived at the palace .',
 		 'the lawyer being examined by the defendant sang beautifully .',
-		 'the lawyer who was examined by the defendant liked the unreliable cat .',
+		 'the lawyer who was examined by the defendant loved the unreliable cat .',
 		 'the lawyer who was examined by the defendant was unreliable .',
 		 'the lawyer who was examined by the defendant arrived at the palace .',
 		 'the lawyer who was examined by the defendant sang beautifully .',
-		 'the lawyer who examined the defendant liked the unreliable cat .',
+		 'the lawyer who examined the defendant loved the unreliable cat .',
 		 'the lawyer who examined the defendant was unreliable .',
 		 'the lawyer who examined the defendant arrived at the palace .',
 		 'the lawyer who examined the defendant sang beautifully .',
-		 'the lawyer who the defendant examined liked the unreliable cat .',
+		 'the lawyer who the defendant examined loved the unreliable cat .',
 		 'the lawyer who the defendant examined was unreliable .',
 		 'the lawyer who the defendant examined arrived at the palace .',
 		 'the lawyer who the defendant examined sang beautifully .',
-		 'the lawyer the defendant examined liked the unreliable cat .',
+		 'the lawyer the defendant examined loved the unreliable cat .',
 		 'the lawyer the defendant examined was unreliable .',
 		 'the lawyer the defendant examined arrived at the palace .',
 		 'the lawyer the defendant examined sang beautifully .',
-		 'the lawyer examined the defendant and liked the cat .',
+		 'the lawyer examined the defendant and loved the cat .',
 		 'the lawyer examined the defendant and was unreliable .',
 		 'the lawyer examined the defendant and arrived at the palace .',
 		 'the lawyer examined the defendant and sang beautifully .',
@@ -81,7 +106,15 @@ sents = [
 # 	print(sent)
 # 	print('WD', actr_model_wd.supertag_sentence(actr_model_wd, sent)[1])
 
-# 	print('EP', actr_model_ep.supertag_sentence(actr_model_ep, sent)[1])
+# 	goal_buffer, supertags, words, act_vals = actr_model_ep.supertag_sentence(actr_model_ep, sent)
+# 	act_vals = [[round(x, 2) for x in item] for item in act_vals]
+
+# 	actr_model_ep.update_counts([sent])
+# 	actr_model_ep.update_base_activation()
+# 	actr_model_ep.update_lexical_activation()
+# 	print('EP', supertags)
+# 	print(act_vals)
+# 	print(actr_model_ep.time)
 	
 # 	print()
 
@@ -98,43 +131,40 @@ sents = [
 
 
 
-def generate_priming_preds(prime_fname, train_fname, stim_fnames):
-	with open(prime_fname, 'w') as pf:
-		writer = csv.writer(pf, delimiter = ',')
-		writer.writerow(['list', 'seed', 'sent_id', 'passive'])
+def generate_priming_preds(model_fname, stim_fname, part_id):
+	preds = []
+	with open(stim_fname, 'r') as sf:
+		stims = sf.readlines()
 
-		for curr_stim_fname in stim_fnames:
-			print(curr_stim_fname)
-			with open(curr_stim_fname, 'r') as sf:
-				curr_stims = sf.readlines()
+	stims = [x.lower() for x in stims]
+	stims = [x.strip() for x in stims]
 
-			curr_stims = [x.lower() for x in curr_stims]
-			curr_stims = [x.strip() for x in curr_stims]
+	with open(model_fname, 'rb') as mf:
+		model = pickle.load(mf)
 
-			for i in range(30):
-				if(i%5 == 0):
-					print(i)
-				random.seed(i)
-				np.random.seed(i)
+	for sent_id,sent in enumerate(stims):
+		if len(sent.split()) > 3:
+			model.update_counts([sent])
+			model.update_base_activation()
+			model.update_lexical_activation()
+		else:
+			tags = model.supertag_sentence(model, sent)[1]
+			if tags[-1] == 'Vt_pass':
+				passive = 1
+			else:
+				passive = 0
 
-				curr_model_fname = train_fname + 'seed' + str(1) + '.pkl'
+			preds.append([stim_fname,part_id,sent_id,passive])
 
-				with open(curr_model_fname, 'rb') as mf:
-					curr_model = pickle.load(mf)
+	return(preds)
 
-				for j,sent in enumerate(curr_stims):
-					if len(sent.split()) > 3:
-						curr_model.update_counts([sent])
-						curr_model.update_base_activation()
-						curr_model.update_lexical_activation()
-					else:
-						tags = curr_model.supertag_sentence(curr_model, sent)[1]
-						if tags[-1] == 'Vt_pass':
-							passive = 1
-						else:
-							passive = 0
+def save_preds(preds, fname):
+	with open(fname, 'w') as f:
+		writer = csv.writer(f, delimiter = ',')
+		writer.writerow(['list', 'part_id', 'sent_id', 'passive'])
 
-						writer.writerow([curr_stim_fname,i,j,passive])
+		for pred in preds:
+			writer.writerow(pred)
 
 
 stim_fnames = []
@@ -143,15 +173,65 @@ for a in ['1','2','3','4']:
 	for b in ['A', 'B', 'C', 'D']:
 		for r in ['', '_rev']:
 			stim_fnames.append('./data/stimuli/list_' + a + b + r + '.txt')
+
+
+ep_preds = []
+wd_preds = []
+
+for num_sents in [100, 500, 1000, 5000]:
+	print('---------------')
+	print(num_sents)
+
+	for i in range(num_parts):
+
+		curr_stim_fname = stim_fnames[i%32]
+
+		# EP preds
+		random.seed(i)
+		np.random.seed(i)
+
+		ep_model_name = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+
+		
+
+		curr_ep_preds = generate_priming_preds(ep_model_name, curr_stim_fname, i)
+		ep_preds.extend(curr_ep_preds)
+
+
+		# WD preds
+		random.seed(i)
+		np.random.seed(i)
+
+		wd_model_name = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+
+
+		curr_wd_preds = generate_priming_preds(wd_model_name, curr_stim_fname, i)
+		wd_preds.extend(curr_wd_preds)
+
+
+		if i%10 == 0:
+			print('Processed %s participants'%str(i+1))
+
+
+	prime_fname_ep = './predictions/ep_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
+
+	prime_fname_wd = './predictions/wd_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
+
+	save_preds(ep_preds, prime_fname_ep)
+
+	save_preds(wd_preds, prime_fname_wd)
+
+
+
 				
-print('EP ACCOUNT')
-generate_priming_preds(prime_fname_ep, train_fname_ep, stim_fnames)
-print()
+# print('EP ACCOUNT')
+# generate_priming_preds(prime_fname_ep, train_fname_ep, stim_fnames)
+# print()
 
 
-print('WD ACCOUNT')
-generate_priming_preds(prime_fname_wd, train_fname_wd, stim_fnames)
-print()
+# print('WD ACCOUNT')
+# generate_priming_preds(prime_fname_wd, train_fname_wd, stim_fnames)
+# print()
 				
 
 
@@ -280,9 +360,9 @@ print()
 
 
 ## DEBUGGIN
-# target = 'the lawyer the defendant examined liked the cat'
+# target = 'the lawyer the defendant examined loved the cat'
 # target = 'the defendant who the lawyer'
-# target = 'the defendant who was being liked by the lawyer liked the cat .'
+# target = 'the defendant who was being loved by the lawyer loved the cat .'
 # print(target)
 
 # print(actr_model.lexical_chunks['being'])
