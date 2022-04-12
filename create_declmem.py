@@ -194,13 +194,13 @@ common_syntax_chunks = {
 
 	'compobj': {
 		'left': 'CP',
-		'right': '((TP\\DP)/DP)/DP)',
+		'right': '(((TP\\DP)/DP)/DP)',
 		'combinator': '/'
 	},
 
 	'compobj_null': {
 		'left': 'CP_null',
-		'right': '((TP\\DP)/DP)/DP)',
+		'right': '(((TP\\DP)/DP)/DP)',
 		'combinator': '/'
 	},
 
