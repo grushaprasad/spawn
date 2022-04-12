@@ -13,7 +13,7 @@ def convert_to_rule(state):
 		return(state['left'] + state['combinator'] + state['right'])
 
 
-def supertag_sentence_ep(actr_model, sentence, print_stages=False):
+def supertag_sentence_ep(actr_model, sentence, print_stages=False, partial_states = []):
 	# print(sentence)
 	end_state = {'left': 'end', 'right': '', 'combinator': ''}
 	words = sentence.split()
@@ -77,6 +77,14 @@ def supertag_sentence_ep(actr_model, sentence, print_stages=False):
 			# print('goal_buffer', goal_buffer)
 
 			combined = combine(curr_tag_chunk, goal_buffer)
+
+			# At the last word in partial prompts see if the state is a "simple parse" if not set combined to none.
+			if curr_word == words[-1] and len(partial_states) > 0: 
+				if combined not in partial_states:
+					combined=None
+					# excluded_tags.append(curr_tag)
+					# j+=1
+					
 			
 			if combined != None:  #i.e. there is a combined state
 
@@ -85,6 +93,7 @@ def supertag_sentence_ep(actr_model, sentence, print_stages=False):
 					# print('REACHED HERE')
 					# print(supertags)
 					break
+
 
 				goal_buffer = combined
 				
@@ -172,7 +181,7 @@ def supertag_sentence_ep(actr_model, sentence, print_stages=False):
 	return(goal_buffer, supertags, words, act_vals)
 
 
-def supertag_sentence_wd(actr_model, sentence, print_stages=False):
+def supertag_sentence_wd(actr_model, sentence, print_stages=False, partial_states = []):
 	end_state = {'left': 'end', 'right': '', 'combinator': ''}
 	# print(sentence)
 	words = sentence.split()
@@ -249,6 +258,11 @@ def supertag_sentence_wd(actr_model, sentence, print_stages=False):
 
 			combined = combine(curr_tag_chunk, goal_buffer)
 
+			# At the last word in partial prompts see if the state is a "simple parse" if not set combined to none.
+			if curr_word == words[-1] and len(partial_states) > 0: 
+				if combined not in partial_states:
+					combined=None
+
 			if(print_stages):
 				print('considering tag:', curr_tag)
 				print('combined state:', combined)
@@ -262,6 +276,12 @@ def supertag_sentence_wd(actr_model, sentence, print_stages=False):
 					# print('REACHED HERE')
 					# print(supertags)
 					break
+
+				# At the last word in partial prompts see if the state is a "simple parse"
+				if curr_word == words[-1] and len(partial_states) > 0: 
+					if combined not in partial_states:
+						combined=False
+						break
 
 				goal_buffer = combined
 				

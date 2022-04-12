@@ -36,15 +36,12 @@ print('HELLO FROPPY')
 
 
 sd = 0.5
+# sd = 1
+num_parts = 512
 
-ntrain_sents = 1000
-# ntrain_sents = 5000
-num_parts = 256
-# num_parts = 100
-
-fname = './trained_models/wd_train0.1k_sd1.5_part26.pkl'
-with open(fname, 'rb') as f:
-	actr_model_wd = pickle.load(f)
+# fname = './trained_models/wd_train0.1k_sd1.5_part26.pkl'
+# with open(fname, 'rb') as f:
+# 	actr_model_wd = pickle.load(f)
 
 
 # print(actr_model_ep.lexical_act['examined'])
@@ -66,7 +63,7 @@ with open(fname, 'rb') as f:
 # 	actr_model_wd = pickle.load(f)
 
 
-print('CHECKING PARSE OF RELEVANT SENTENCES')
+# print('CHECKING PARSE OF RELEVANT SENTENCES')
 
 sents = [
 		 'the lawyer examined the defendant .',
@@ -148,20 +145,27 @@ def generate_priming_preds(model_fname, stim_fname, part_id):
 			model.update_base_activation()
 			model.update_lexical_activation()
 		else:
-			tags = model.supertag_sentence(model, sent)[1]
+			partial_states = [{'left': 'DP', 'right': 'PP', 'combinator': '/'},
+					          {'left': 'TP', 'right': 'DP', 'combinator': '/'}]
+
+			final_state, tags, words, act_vals = model.supertag_sentence(model, sent, partial_states=partial_states)
+
+			final_state_rule = final_state['left'] + final_state['combinator'] + final_state['right']
+
 			if tags[-1] == 'Vt_pass':
 				passive = 1
 			else:
 				passive = 0
 
-			preds.append([stim_fname,part_id,sent_id,passive])
+			preds.append([stim_fname,part_id,sent_id,passive, final_state_rule])
 
 	return(preds)
+
 
 def save_preds(preds, fname):
 	with open(fname, 'w') as f:
 		writer = csv.writer(f, delimiter = ',')
-		writer.writerow(['list', 'part_id', 'sent_id', 'passive'])
+		writer.writerow(['list', 'part_id', 'sent_id', 'passive', 'goalstate'])
 
 		for pred in preds:
 			writer.writerow(pred)
@@ -178,7 +182,8 @@ for a in ['1','2','3','4']:
 ep_preds = []
 wd_preds = []
 
-for num_sents in [100, 500, 1000, 5000]:
+#for num_sents in [100, 1000, 10000]:
+for num_sents in [100, 1000]:
 	print('---------------')
 	print(num_sents)
 
