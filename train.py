@@ -7,6 +7,7 @@ import pickle
 
 from actr_model import actr_model
 import supertagger
+import csv
 
 
 random.seed(7)
@@ -49,8 +50,8 @@ train_dat = [x.strip() for x in train_dat]
 
 
 # num_sents = 5000
-num_parts = 256
-global_sd = 0.5
+num_parts = 512
+global_sd = 1
 
 # Hyperparameters that do not change
 decay = 0.5           # Standard value for ACT-R models
@@ -59,8 +60,10 @@ latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4
 
 
 
-for num_sents in [100, 500, 1000, 5000]:
+#for num_sents in [100,1000,10000]:
+for num_sents in [100,1000]:
 	print('Num sents: ', num_sents)
+	sds = []
 	for i in range(num_parts):
 		random.seed(i)   #different seeds used for fitting the error terms than generating participants
 		np.random.seed(i)
@@ -68,11 +71,7 @@ for num_sents in [100, 500, 1000, 5000]:
 		latency_factor = np.random.beta(2,6)  #prior  Englemann and Vasisth chapter. 
 		noise_sd = abs(np.random.normal(0.35, global_sd))
 
-		# noise_sd = np.random.uniform(0.2, 0.5) #prior  Englemann and Vasisth chapter (pg 64)
-
-
-		# noise_sd = np.random.uniform(1.4, 1.7) #prior  Englemann and Vasisth chapter (pg 64)
-
+		sds.append([i, noise_sd])
 
 		curr_train_dat = deepcopy(train_dat)
 		random.shuffle(curr_train_dat)
@@ -93,9 +92,14 @@ for num_sents in [100, 500, 1000, 5000]:
 								  supertagger.supertag_sentence_ep)
 
 		# Note I am updating base activations only at the end of all training. Do I want to update after every sentence or every n sentences? (This should only affect it if I have globally ambiguous sentences ? )
-		actr_model_ep.update_counts(curr_train_dat)
-		actr_model_ep.update_base_activation()
-		actr_model_ep.update_lexical_activation()
+		# actr_model_ep.update_counts(curr_train_dat)
+		# actr_model_ep.update_base_activation()
+		# actr_model_ep.update_lexical_activation()
+
+		for sent in curr_train_dat:
+			actr_model_ep.update_counts([sent])
+			actr_model_ep.update_base_activation()
+			actr_model_ep.update_lexical_activation()
 
 		ep_fname = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
 
@@ -118,9 +122,14 @@ for num_sents in [100, 500, 1000, 5000]:
 
 		# Train WD
 
-		actr_model_wd.update_counts(curr_train_dat)
-		actr_model_wd.update_base_activation()
-		actr_model_wd.update_lexical_activation()
+		# actr_model_wd.update_counts(curr_train_dat)
+		# actr_model_wd.update_base_activation()
+		# actr_model_wd.update_lexical_activation()
+
+		for sent in curr_train_dat:
+			actr_model_wd.update_counts([sent])
+			actr_model_wd.update_base_activation()
+			actr_model_wd.update_lexical_activation()
 
 
 		wd_fname = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
@@ -131,6 +140,18 @@ for num_sents in [100, 500, 1000, 5000]:
 
 		if i%5 == 0:
 			print('Trained %s models'%str(i+1))
+
+	sd_fname = './trained_models/noisesds_train%sk_sd%s.csv'%(str(num_sents/1000), str(global_sd))
+
+	with open(sd_fname, 'w') as f:
+		writer = csv.writer(f, delimiter = ',')
+
+		writer.writerow(['part', 'sd'])
+
+		for sd in sds:
+			writer.writerow(sd)
+
+
 
 
 
