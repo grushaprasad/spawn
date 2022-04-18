@@ -703,6 +703,9 @@ def sample_cp(actr_model, curr_bad_cp):
 			comp = np.random.choice(comp_types)
 			comp_act = actr_model.max_activation/len(comp_types)
 		else:
+			for tag in comp_act_dict:  #add in random noise
+				comp_act_dict[tag] += np.random.normal(0, actr_model.noise_sd)
+
 			comp = max(comp_act_dict, key=lambda key:comp_act_dict[key])
 			comp_act = comp_act_dict[comp]
 			# probs = np.array(list(comp_act_dict.values()))/sum(comp_act_dict.values())
@@ -726,6 +729,9 @@ def sample_aux(actr_model, curr_bad_aux):
 			aux = np.random.choice(aux_types)
 			aux_act = actr_model.max_activation/len(aux_types)
 		else:
+			for tag in aux_act_dict:  #add in random noise
+				aux_act_dict[tag] += np.random.normal(0, actr_model.noise_sd)
+
 			aux = max(aux_act_dict, key=lambda key:aux_act_dict[key])
 			aux_act = aux_act_dict[aux]
 			# probs = np.array(list(aux_act_dict.values()))/sum(aux_act_dict.values())
