@@ -375,8 +375,8 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 		# print(curr_word)
 		# print('goal_states', goal_states)
 		# print('goal_buffer', goal_buffer)
-		# for j, supertag in enumerate(supertags):
-		# 	print(words[j], supertag, curr_bad_tags[j], curr_bad_cp[j])
+		# # for j, supertag in enumerate(supertags):
+		# # 	print(words[j], supertag, curr_bad_tags[j], curr_bad_cp[j])
 		# print('supertags', supertags)
 		# print('words', words)
 		# print('words', words)
@@ -386,8 +386,9 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 		poss_tags = [x for x in poss_tags if x not in curr_bad_tags[i]]
 
 		# print('curr_bad_tags', curr_bad_tags[i])
-		# print('poss_tags', poss_tags)
+		# # print('poss_tags', poss_tags)
 		# print('curr_bad_cp', curr_bad_cp[i])
+		# print('bad_cp', curr_bad_cp)
 		# print('curr_bad_aux', curr_bad_aux[i])
 
 
@@ -424,8 +425,8 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 			if(print_stages):
 				print('Goal buffer:', goal_buffer)
 				print('considering tag:', curr_tag)
-				print('tag chunk:', curr_tag_chunk)
-				print('combined state:', combined)
+				# print('tag chunk:', curr_tag_chunk)
+				# print('combined state:', combined)
 				print('curr_bad_cp', curr_bad_cp)
 				print('curr_bad_tags', curr_bad_tags)
 
@@ -459,6 +460,12 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 					# print('curr_bad_cp', curr_bad_cp[i-1])
 					if cp_type != None:
 						comp_chunk = actr_model.syntax_chunks[cp_type]
+					# else:
+					# 	# i.e., no CP type is possible:
+					# 	print('REACHED HERE NO CP POSSIBLE')
+					# 	print('curr bad tags before', curr_bad_tags)
+					# 	curr_bad_tags[i-1].add('NP_CP')
+					# 	print('curr bad tags before',curr_bad_tags)
 
 					if cp_type == 'NP_CP':
 						break
@@ -558,6 +565,7 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 					# curr_bad_cp.add(cp_type)   #tried all the aux, so CP doesn't work. 
 					#curr_bad_cp[i-2].add(cp_type)
 					curr_bad_cp[i-2].add(supertags[i-1]) #cp would be the prev tag
+
 					cp_type = ''
 		
 				i -=1
@@ -573,9 +581,10 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 				goal_states.pop(-1) # remove aux
 				# print('goal_states3', goal_states)
 				words.pop(i)
-				supertags.pop(i)
+				cp_type = supertags.pop(i)
 				curr_bad_tags.pop(i)
 				curr_bad_cp.pop(i)
+				#print('the popped supertag was ', cp_type)
 				curr_bad_aux.pop(i)    #this is getting 
 
 				x = act_vals.pop(i)
@@ -593,7 +602,10 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 					curr_bad_cp[i].add(cp_type)
 					cp_type = ''
 
-					# print(curr_bad_cp[i], words[i])
+					# print('REACHED HERE')
+					# print(supertags[i-1], supertags[i], cp_type)
+					# print(curr_bad_cp[i], words[i], supertags[i], supertags[i-1])
+					# print(curr_bad_cp)
 
 				
 
@@ -616,7 +628,7 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 					# print('LAST GOAL STATE', goal_states[-1])
 					# print(words[i])
 					curr_bad_cp[i].add('NP_CP')
-					cp_type = ''
+					#cp_type = ''
 					if len(curr_bad_cp[i]) == len(actr_model.lexical_chunks['comp_del']['syntax']):
 						# print('REACHED HERE ALSO')
 						curr_bad_tags[i].add(supertags[i])
