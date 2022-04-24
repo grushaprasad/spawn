@@ -42,6 +42,12 @@ with open('./declmem/syntax_chunks_ep.pkl', 'rb') as f:
 with open('./declmem/syntax_chunks_wd.pkl', 'rb') as f:
 	syntax_chunks_wd = pickle.load(f)
 
+with open('./declmem/syntax_chunks_wd2.pkl', 'rb') as f:
+	syntax_chunks_wd2 = pickle.load(f)
+
+with open('./declmem/lexical_chunks_wd2.pkl', 'rb') as f:
+	lexical_chunks_wd2 = pickle.load(f)
+
 with open(train_fname,'r') as f:
 	train_dat = f.readlines()
 
@@ -61,10 +67,13 @@ latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4
 
 
 #for num_sents in [100,1000,10000]:
-for num_sents in [100,1000]:
+#for num_sents in [100,1000]:
+for num_sents in [100,500]:
+#for num_sents in [10000]:
 	print('Num sents: ', num_sents)
 	sds = []
 	for i in range(num_parts):
+		# print(i)
 		random.seed(i)   #different seeds used for fitting the error terms than generating participants
 		np.random.seed(i)
 
@@ -81,7 +90,7 @@ for num_sents in [100,1000]:
 		random.seed(i) #reset seeds right before training to be as close to WD as possible
 		np.random.seed(i)
 
-		# Train EP
+		## Train EP
 		actr_model_ep = actr_model(decay,
 								  max_activation,
 								  noise_sd,
@@ -89,7 +98,8 @@ for num_sents in [100,1000]:
 							  	  latency_exponent,
 								  syntax_chunks_ep,
 								  lexical_chunks_ep,
-								  supertagger.supertag_sentence_ep)
+								  supertagger.supertag_sentence)
+
 
 		# Note I am updating base activations only at the end of all training. Do I want to update after every sentence or every n sentences? (This should only affect it if I have globally ambiguous sentences ? )
 		# actr_model_ep.update_counts(curr_train_dat)
@@ -107,35 +117,61 @@ for num_sents in [100,1000]:
 			pickle.dump(actr_model_ep, f)
 
 
+		# random.seed(i)  #reset seeds to be as close to EP as possible
+		# np.random.seed(i)
+
+		# actr_model_wd = actr_model(decay,
+		# 					  max_activation,
+		# 					  noise_sd,
+		# 					  latency_factor,
+		# 					  latency_exponent,
+		# 					  syntax_chunks_wd,
+		# 					  lexical_chunks_wd,
+		# 					  supertagger.supertag_sentence_wd)
+
+
+		# # Train WD
+
+		# # actr_model_wd.update_counts(curr_train_dat)
+		# # actr_model_wd.update_base_activation()
+		# # actr_model_wd.update_lexical_activation()
+
+		# for sent in curr_train_dat:
+		# 	actr_model_wd.update_counts([sent])
+		# 	actr_model_wd.update_base_activation()
+		# 	actr_model_wd.update_lexical_activation()
+
+
+		# wd_fname = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+
+		# with open(wd_fname, 'wb') as f:
+		# 	pickle.dump(actr_model_wd, f)
+
+
+		## Train WD2
+
 		random.seed(i)  #reset seeds to be as close to EP as possible
 		np.random.seed(i)
 
-		actr_model_wd = actr_model(decay,
+		actr_model_wd2 = actr_model(decay,
 							  max_activation,
 							  noise_sd,
 							  latency_factor,
 							  latency_exponent,
-							  syntax_chunks_wd,
-							  lexical_chunks_wd,
-							  supertagger.supertag_sentence_wd)
-
-
-		# Train WD
-
-		# actr_model_wd.update_counts(curr_train_dat)
-		# actr_model_wd.update_base_activation()
-		# actr_model_wd.update_lexical_activation()
+							  syntax_chunks_wd2,
+							  lexical_chunks_wd2,
+							  supertagger.supertag_sentence)
 
 		for sent in curr_train_dat:
-			actr_model_wd.update_counts([sent])
-			actr_model_wd.update_base_activation()
-			actr_model_wd.update_lexical_activation()
+			actr_model_wd2.update_counts([sent])
+			actr_model_wd2.update_base_activation()
+			actr_model_wd2.update_lexical_activation()
 
 
-		wd_fname = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+		wd2_fname = './trained_models/wd2_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
 
-		with open(wd_fname, 'wb') as f:
-			pickle.dump(actr_model_wd, f)
+		with open(wd2_fname, 'wb') as f:
+			pickle.dump(actr_model_wd2, f)
 
 
 		if i%5 == 0:

@@ -10,6 +10,9 @@ import supertagger
 # import train
 import csv
 
+from actr_model import actr_model
+
+
 # random.seed(7)
 # np.random.seed(7)
 
@@ -35,8 +38,8 @@ print('HELLO FROPPY')
 # prime_fname_wd = './predictions/wd_train1k.csv'
 
 
-sd = 0.5
-# sd = 1
+# sd = 0.5
+sd = 1
 num_parts = 512
 
 # fname = './trained_models/wd_train0.1k_sd1.5_part26.pkl'
@@ -98,10 +101,37 @@ sents = [
 		 'the lawyer examined the defendant and arrived at the palace .',
 		 'the lawyer examined the defendant and sang beautifully .',
 		]
+with open('./declmem/syntax_chunks_wd2.pkl', 'rb') as f:
+	syntax_chunks_wd2 = pickle.load(f)
+
+with open('./declmem/lexical_chunks_wd2.pkl', 'rb') as f:
+	lexical_chunks_wd2 = pickle.load(f)
+
+with open('./declmem/syntax_chunks_ep.pkl', 'rb') as f:
+	syntax_chunks_ep = pickle.load(f)
+
+with open('./declmem/lexical_chunks_ep.pkl', 'rb') as f:
+	lexical_chunks_ep = pickle.load(f)
+
+# decay = 0.5           # Standard value for ACT-R models
+# max_activation = 1.5  # Standard value for ACT-R models
+# latency_exponent = 1  # Will always set this to 1 (because then 
+# noise_sd = 0.5
+# latency_factor = 0.4
+
+
+# actr_model_ep =  actr_model(decay,
+# 						max_activation,
+# 						noise_sd,
+# 						latency_factor,
+# 						latency_exponent,
+# 						syntax_chunks_ep,
+# 						lexical_chunks_ep,
+# 						supertagger.supertag_sentence)
 
 # for sent in sents:
 # 	print(sent)
-# 	print('WD', actr_model_wd.supertag_sentence(actr_model_wd, sent)[1])
+# 	print('EP', actr_model_ep.supertag_sentence(actr_model_ep, sent)[1])
 
 # 	goal_buffer, supertags, words, act_vals = actr_model_ep.supertag_sentence(actr_model_ep, sent)
 # 	act_vals = [[round(x, 2) for x in item] for item in act_vals]
@@ -161,6 +191,46 @@ def generate_priming_preds(model_fname, stim_fname, part_id):
 
 	return(preds)
 
+def flatten(l):
+	return([x for sublist in l for x in sublist])
+
+def compare_baseact_rrc_progrrc(model_fname, stim_fname, part_id):
+	preds = []
+	with open(stim_fname, 'r') as sf:
+		stims = sf.readlines()
+
+	stims = [x.lower() for x in stims]
+	stims = [x.strip() for x in stims]
+
+	with open(model_fname, 'rb') as mf:
+		model = pickle.load(mf)
+
+	delta_baseact_rrc = []
+	delta_baseact_progrrc = []
+
+	for sent_id,sent in enumerate(stims):
+		if len(sent.split()) > 3:
+			time_before = model.time
+			baseact_before = model.base_act['NP_CP_null']
+			#final_state, tags, words, act_vals = model.supertag_sentence(model, sent)
+			model.update_counts([sent])
+			model.update_base_activation()
+
+			baseact_after = model.base_act['NP_CP_null']
+			time_after = model.time
+			words = sent.split()
+			if words[2] == 'being':
+				delta_baseact_progrrc.append(baseact_after-baseact_before)
+			if words[3] == 'by':
+				delta_baseact_rrc.append(baseact_after-baseact_before)
+			#print(sent.split()[2]+ ' ' + sent.split()[3], round(time_after-time_before))
+
+			#print(tags[3], len(act_vals[3]), len(flatten(act_vals)))
+		else:
+			continue
+
+	return(delta_baseact_rrc, delta_baseact_progrrc)
+
 
 def save_preds(preds, fname):
 	with open(fname, 'w') as f:
@@ -181,9 +251,12 @@ for a in ['1','2','3','4']:
 
 ep_preds = []
 wd_preds = []
+wd2_preds = []
 
-#for num_sents in [100, 1000, 10000]:
-for num_sents in [100, 1000]:
+# for num_sents in [100, 1000, 10000]:
+#for num_sents in [100, 1000]:
+for num_sents in [100, 500]:
+#for num_sents in [10000]:
 	print('---------------')
 	print(num_sents)
 
@@ -197,21 +270,58 @@ for num_sents in [100, 1000]:
 
 		ep_model_name = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
 
-		
+		# with open(ep_model_name, 'rb') as mf:
+		# 	model = pickle.load(mf)
+
+		# comp_types = model.lexical_chunks['comp_del']['syntax']
+		# for comp in comp_types:
+		# 	print(comp,  model.base_count[comp],model.base_instance[comp],model.base_act[comp])
+		# 	print(model.time, model.compute_baseact(comp))
+		# print('-----')
+
 
 		curr_ep_preds = generate_priming_preds(ep_model_name, curr_stim_fname, i)
 		ep_preds.extend(curr_ep_preds)
 
 
 		# WD preds
+		# random.seed(i)
+		# np.random.seed(i)
+
+		# wd_model_name = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+
+
+		# curr_wd_preds = generate_priming_preds(wd_model_name, curr_stim_fname, i)
+		# wd_preds.extend(curr_wd_preds)
+
+
+		# WD2 preds
 		random.seed(i)
 		np.random.seed(i)
 
-		wd_model_name = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+		wd2_model_name = './trained_models/wd2_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+
+		curr_wd2_preds = generate_priming_preds(wd2_model_name, curr_stim_fname, i)
+		wd2_preds.extend(curr_wd2_preds)
+
+		# with open(wd2_model_name, 'rb') as mf:
+		# 	model = pickle.load(mf)
+
+		# comp_types = model.lexical_chunks['comp_del']['syntax']
+		# for comp in comp_types:
+		# 	#print(comp, model.base_count[comp],model.base_instance[comp],model.base_act[comp],model.compute_baseact(comp))
+		# 	print(comp)
+		# 	time_seq = model.time - np.array(deepcopy(model.base_instance[comp]))
+
+		# 	activation = np.log(sum(np.power(time_seq, -model.decay)))
+		# 	print(time_seq)
+		# 	print(activation)
 
 
-		curr_wd_preds = generate_priming_preds(wd_model_name, curr_stim_fname, i)
-		wd_preds.extend(curr_wd_preds)
+			#print(model.time, model.compute_baseact(comp))
+
+		# print('=========')
+
 
 
 		if i%10 == 0:
@@ -222,11 +332,53 @@ for num_sents in [100, 1000]:
 
 	prime_fname_wd = './predictions/wd_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
 
+	prime_fname_wd2 = './predictions/wd2_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
+
 	save_preds(ep_preds, prime_fname_ep)
 
-	save_preds(wd_preds, prime_fname_wd)
+	# save_preds(wd_preds, prime_fname_wd)
+
+	save_preds(wd2_preds, prime_fname_wd2)
 
 
+
+
+### Understanding why ProgRRC has lower priming effect than 
+# for num_sents in [100, 1000]:
+# #for num_sents in [10000]:
+# 	print('---------------')
+# 	print(num_sents)
+# 	means_rrc = []
+# 	means_progrrc = []
+# 	rrc_greater_than_progrrc = []
+
+# 	for i in range(1):
+
+# 		curr_stim_fname = stim_fnames[i%32]
+
+
+# 		# WD preds
+# 		random.seed(i)
+# 		np.random.seed(i)
+
+# 		wd_model_name = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+
+
+# 		delta_baseact_rrc, delta_baseact_progrrc = compare_baseact_rrc_progrrc(wd_model_name, curr_stim_fname, i)
+
+# 		mean_delta_baseact_rrc = sum(delta_baseact_rrc)/len(delta_baseact_rrc)
+# 		mean_delta_baseact_progrrc = sum(delta_baseact_progrrc)/len(delta_baseact_progrrc)
+
+# 		means_rrc.append(mean_delta_baseact_rrc)
+# 		means_progrrc.append(mean_delta_baseact_progrrc)
+# 		rrc_greater_than_progrrc.append(mean_delta_baseact_rrc > mean_delta_baseact_progrrc)
+
+
+	
+# 	print('RRC ', sum(means_rrc)/len(means_rrc))
+# 	print('ProgRRC ', sum(means_progrrc)/len(means_progrrc))
+# 	print('RRC > ProgRRC ', sum(rrc_greater_than_progrrc)/len(rrc_greater_than_progrrc))
+		
 
 				
 # print('EP ACCOUNT')

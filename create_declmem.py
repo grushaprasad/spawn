@@ -46,81 +46,111 @@ all_nouns = animate_nouns + inanimate_nouns + location_nouns + other_nouns
 all_vocab = all_nouns + determiners + adjectives + adverbs + aux + prepositions + DP + ambig_verbs + other_verbs + intrans_verbs + transloc_verbs
 
 
+print(len(adjectives))
+print(len(adverbs))
+
+
 lexical_chunks_ep = {}
 lexical_chunks_wd = {}
+lexical_chunks_wd2 = {}
 
 for noun in all_nouns:
-	lexical_chunks_ep[noun] = {'syntax': ['NP', 'NP_ProgP', 'NP_VoiceP', 'NP_CP', 'NP_CP_null']}
+	# lexical_chunks_ep[noun] = {'syntax': ['NP', 'NP_ProgP', 'NP_VoiceP', 'NP_CP', 'NP_CP_null']}
+
+	lexical_chunks_ep[noun] = {'syntax': ['NP', 'NP_ProgP', 'NP_VoiceP', 'NP_CP']}
 
 	lexical_chunks_wd[noun] = {'syntax': ['NP', 'NP_CP', 'NP_CP_null']}
+	lexical_chunks_wd2[noun] = {'syntax': ['NP', 'NP_CP']}
 
 
 for verb in ambig_verbs:
 	lexical_chunks_ep[verb] = { 'syntax' : ['Vt_act', 'Vt_pass']}
 	lexical_chunks_wd[verb] = { 'syntax' : ['Vt_act', 'Vt_pass']}
+	lexical_chunks_wd2[verb] = { 'syntax' : ['Vt_act', 'Vt_pass']}
 
 for verb in other_verbs:
 	lexical_chunks_ep[verb] = { 'syntax' : ['Vt_act']}
 	lexical_chunks_wd[verb] = { 'syntax' : ['Vt_act']}
+	lexical_chunks_wd2[verb] = { 'syntax' : ['Vt_act']}
 
 
 for verb in intrans_verbs:
 	lexical_chunks_ep[verb] = { 'syntax' : ['V_intrans']}
 	lexical_chunks_wd[verb] = { 'syntax' : ['V_intrans']}
+	lexical_chunks_wd2[verb] = { 'syntax' : ['V_intrans']}
 
 for verb in transloc_verbs:
 	lexical_chunks_ep[verb] = { 'syntax' : ['Vt_loc']}
 	lexical_chunks_wd[verb] = { 'syntax' : ['Vt_loc']}
+	lexical_chunks_wd2[verb] = { 'syntax' : ['Vt_loc']}
 
 
 for det in determiners:
 	lexical_chunks_ep[det] = { 'syntax' : ['Det']}
 	lexical_chunks_wd[det] = { 'syntax' : ['Det']}
+	lexical_chunks_wd2[det] = { 'syntax' : ['Det']}
 
 
 for prep in prepositions:
 	lexical_chunks_ep[prep] = { 'syntax' : ['Prep']}
 	lexical_chunks_wd[prep] = { 'syntax' : ['Prep']}
+	lexical_chunks_wd2[prep] = { 'syntax' : ['Prep']}
 
 for adj in adjectives:
 	lexical_chunks_ep[adj] = { 'syntax' : ['Adj']}
 	lexical_chunks_wd[adj] = { 'syntax' : ['Adj']}
+	lexical_chunks_wd2[adj] = { 'syntax' : ['Adj']}
 
 for adv in adverbs:
 	lexical_chunks_ep[adv] = { 'syntax' : ['Adv']}
 	lexical_chunks_wd[adv] = { 'syntax' : ['Adv']}
+	lexical_chunks_wd2[adv] = { 'syntax' : ['Adv']}
 
 
 for a in aux:
 	lexical_chunks_ep[a] = { 'syntax' : ['aux']}
 	lexical_chunks_wd[a] = { 'syntax' : ['aux']}
+	lexical_chunks_wd2[a] = { 'syntax' : ['aux']}
 
 
 for d in DP:
 	lexical_chunks_ep[d] = { 'syntax' : ['DP']}
 	lexical_chunks_wd[d] = { 'syntax' : ['DP']}
+	lexical_chunks_wd2[d] = { 'syntax' : ['DP']}
 
 lexical_chunks_ep['who'] = {'syntax' : ['compsubj', 'compobj']}
 lexical_chunks_wd['who'] = {'syntax' : ['compsubj', 'compobj']}
+lexical_chunks_wd2['who'] = {'syntax' : ['compsubj', 'compobj']}
 
-lexical_chunks_ep['comp_del'] = {'syntax' : ['compsubj', 'compobj']}
+# lexical_chunks_ep['comp_del'] = {'syntax' : ['compsubj', 'compobj']}
+# lexical_chunks_wd['comp_del'] = {'syntax' : ['compsubj', 'compobj']}
+# lexical_chunks_wd2['comp_del'] = {'syntax' : ['compsubj_pass', 'compsubj_prog','compobj']}
+
+lexical_chunks_ep['comp_del'] = {'syntax' : ['compobj_null', 'NP_CP']}
 lexical_chunks_wd['comp_del'] = {'syntax' : ['compsubj', 'compobj']}
+lexical_chunks_wd2['comp_del'] = {'syntax' : ['compobj_null', 'compsubj_null', 'NP_CP']}
 
 lexical_chunks_ep['was'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
 lexical_chunks_wd['was'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
+lexical_chunks_wd2['was'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
 
 lexical_chunks_wd['aux_del'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
+lexical_chunks_wd2['aux_del'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
+
 
 
 
 lexical_chunks_ep['being'] = {'syntax' : ['ProgP']}
 lexical_chunks_wd['being'] = {'syntax' : ['ProgP']}
+lexical_chunks_wd2['being'] = {'syntax' : ['ProgP']}
 
 lexical_chunks_ep['and'] = {'syntax' : ['conj']}
 lexical_chunks_wd['and'] = {'syntax' : ['conj']}
+lexical_chunks_wd2['and'] = {'syntax' : ['conj']}
 
 lexical_chunks_ep['.'] = {'syntax' : ['eos']}
 lexical_chunks_wd['.'] = {'syntax' : ['eos']}
+lexical_chunks_wd2['.'] = {'syntax' : ['eos']}
 
 
 
@@ -150,11 +180,11 @@ common_syntax_chunks = {
 		'combinator': '/'
 	},
 
-	'NP_CP_null' : {
-		'left': 'NP',
-		'right': 'CP_null',
-		'combinator': '/'
-	},
+	# 'NP_CP_null' : {
+	# 	'left': 'NP',
+	# 	'right': 'CP_null',
+	# 	'combinator': '/'
+	# },
 
 	'Prep' : {
 		'left': 'PP',
@@ -258,12 +288,21 @@ syntax_chunks_ep = {key:val for key, val in common_syntax_chunks.items()}
 
 syntax_chunks_wd = {key:val for key, val in common_syntax_chunks.items()}
 
+syntax_chunks_wd2 = {key:val for key, val in common_syntax_chunks.items()}
+
+
 
 syntax_chunks_ep['NP_VoiceP'] = {
 								'left': 'NP',
 								'right': 'VoiceP',
 								'combinator': '/'
 								}
+
+# syntax_chunks_ep['NP_CP_null'] = {
+# 								'left': 'NP',
+# 								'right': 'CP_null',
+# 								'combinator': '/'
+# 								}
 
 
 syntax_chunks_ep['NP_ProgP'] = {
@@ -272,7 +311,19 @@ syntax_chunks_ep['NP_ProgP'] = {
 								'combinator': '/'
 								}
 
+syntax_chunks_ep['compobj_null'] = {
+								'left': 'CP',
+								'right': '(((TP\\DP)/DP)/DP)',
+								'combinator': '/'
+								}
 
+
+
+syntax_chunks_wd['NP_CP_null'] = {
+								'left': 'NP',
+								'right': 'CP_null',
+								'combinator': '/'
+								}
 
 syntax_chunks_wd['compsubj_null'] = {
 								'left': 'CP_null',
@@ -281,34 +332,54 @@ syntax_chunks_wd['compsubj_null'] = {
 								}
 
 
+syntax_chunks_wd2['compsubj_null'] = {
+								'left': 'CP',
+								'right': '(TP\\DP)',
+								'combinator': '/'
+								}
 
-with open('./data/rrcs.txt', 'r') as f:
-	stims = f.readlines()
-
-stims = [x.lower() for x in stims]
-stims = [x.strip() for x in stims]
-
-stims = ' '.join(stims)
-
-stims = stims.split()
-
-stim_vocab = set(stims)
+syntax_chunks_wd2['compobj_null'] = {
+								'left': 'CP',
+								'right': '(((TP\\DP)/DP)/DP)',
+								'combinator': '/'
+								}
 
 
-missing_words = [x for x in stim_vocab if x not in all_vocab]
 
-print(missing_words)
+
+# with open('./data/rrcs.txt', 'r') as f:
+# 	stims = f.readlines()
+
+# stims = [x.lower() for x in stims]
+# stims = [x.strip() for x in stims]
+
+# stims = ' '.join(stims)
+
+# stims = stims.split()
+
+# stim_vocab = set(stims)
+
+
+# missing_words = [x for x in stim_vocab if x not in all_vocab]
+
+# print(missing_words)
 with open('./declmem/lexical_chunks_ep.pkl', 'wb') as f:
 		pickle.dump(lexical_chunks_ep, f)
 
 
-with open('./declmem/lexical_chunks_wd.pkl', 'wb') as f:
-		pickle.dump(lexical_chunks_wd, f)
+# with open('./declmem/lexical_chunks_wd.pkl', 'wb') as f:
+# 		pickle.dump(lexical_chunks_wd, f)
+
+with open('./declmem/lexical_chunks_wd2.pkl', 'wb') as f:
+		pickle.dump(lexical_chunks_wd2, f)
 
 
 with open('./declmem/syntax_chunks_ep.pkl', 'wb') as f:
 		pickle.dump(syntax_chunks_ep, f)
 
 
-with open('./declmem/syntax_chunks_wd.pkl', 'wb') as f:
-		pickle.dump(syntax_chunks_wd, f)
+# with open('./declmem/syntax_chunks_wd.pkl', 'wb') as f:
+# 		pickle.dump(syntax_chunks_wd, f)
+
+with open('./declmem/syntax_chunks_wd2.pkl', 'wb') as f:
+		pickle.dump(syntax_chunks_wd2, f)
