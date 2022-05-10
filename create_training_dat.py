@@ -300,12 +300,21 @@ function_dict = {
 	'amv_conj': generate_amv_conj
 }
 
+# src_prob = (14182 + 15024 + 18229)/3000000
+# orc_prob = (2943 +  1976 + 1802)/3000000
+# orrc_prob = (5455 + 4746 + 3385)/3000000
+# frc_prob = (77993 + 882 + 375)/3000000
+# rrc_prob = (26841 + 3302 + 3918)/3000000
+# prog_prob = (13567 + 150 + 129)/3000000
+# amv_prob = 1 - (src_prob + orc_prob + orrc_prob + frc_prob + rrc_prob + prog_prob)
+
+
 src_prob = (14182 + 15024 + 18229)/3000000
 orc_prob = (2943 +  1976 + 1802)/3000000
 orrc_prob = (5455 + 4746 + 3385)/3000000
-frc_prob = (77993 + 882 + 375)/3000000
-rrc_prob = (26841 + 3302 + 3918)/3000000
-prog_prob = (13567 + 150 + 129)/3000000
+frc_prob = (3188 + 2867 + 1224)/3000000
+rrc_prob = (10730 + 10733 + 12788)/3000000
+prog_prob = (542 + 488 + 421)/3000000
 amv_prob = 1 - (src_prob + orc_prob + orrc_prob + frc_prob + rrc_prob + prog_prob)
 
 
