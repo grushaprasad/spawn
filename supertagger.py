@@ -15,7 +15,7 @@ def convert_to_rule(state):
 def supertag_sentence(actr_model, sentence, print_stages=False, partial_states = []):
 	type_raising_rules = actr_model.type_raising_rules
 	end_state = {'left': 'end', 'right': '', 'combinator': ''}
-	# print(sentence)
+	print(sentence)
 	words = sentence.split()
 	supertags = ['' for word in words]
 	act_vals = [[] for word in words] #activation values for all tags considered.
@@ -91,7 +91,7 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 
 			# combined = combine(curr_tag_chunk, goal_buffer, type_raising_rules)
 
-			combined = combine(tag = curr_tag, goal_buffer =  goal_buffer, tr_rules = type_raising_rules)
+			combined = combine(tag = curr_tag_chunk, goal_buffer =  goal_buffer, tr_rules = type_raising_rules)
 
 			# At the last word in partial prompts see if the state is a "simple parse" if not set combined to none.
 			if curr_word == words[-1] and len(partial_states) > 0: 
@@ -151,7 +151,7 @@ def supertag_sentence(actr_model, sentence, print_stages=False, partial_states =
 						supertags.insert(i, cp_type)
 						act_vals.insert(i, [cp_act])
 						# new_state = combine(comp_chunk, goal_buffer, type_raising_rules)
-						new_state = combine(tag = cp_type, goal_buffer = goal_buffer, tr_rules = type_raising_rules)
+						new_state = combine(tag = comp_chunk, goal_buffer = goal_buffer, tr_rules = type_raising_rules)
 						curr_bad_tags.insert(i, [])
 						curr_bad_cp.insert(i, set())
 						curr_bad_aux.insert(i, set())
@@ -1041,14 +1041,49 @@ def get_nested(chunk, chunk_type):
 	if chunk_type == 'goal_buffer':
 		if chunk['combinator'] == '/' and chunk['right'][-1] == ')':
 			split = chunk['right'].split('/')
-			left = balance_parens('/'.join(split[:-1]))
-			right = balance_parens(split[-1])
+			left = balance_parens('/'.join(split[:-1])).strip()
+			right = balance_parens(split[-1]).strip()
 			return {'left': left, 'right': right, 'combinator':'/'}
-			
+		# elif chunk['combinator'] == '' and chunk['right'] == '' and chunk['left'][-1]== ')': #a nested rule in the left but leaving the right and combinator empty
+		# 	split = chunk['left'].split('/')
+		# 	left = balance_parens('/'.join(split[:-1])).strip()
+		# 	right = balance_parens(split[-1]).strip()
+		# 	return {'left': left, 'right': right, 'combinator':'/'}
 
+			
+def fix_chunk(chunk):
+	"""
+	Sometimes we end up with a chunk like this:
+	{'left': '(TP/(TP\\DP))', 'right': '', 'combinator': ''}
+
+	We want that to instead be:
+	{'left': 'TP', 'right': '(TP\\DP)', 'combinator: '/'}
+
+	TO DO: 
+	What if the combinator was \\ ? 
+	(TP\\(TP\\DP)) -> {'left': 'TP', 'right': '(TP\\DP)', 'combinator: '\\'}
+
+	((TP\\DP)/TP) -> {'left': '(TP\\DP)', 'right': 'TP', 'combinator: '/'}
+
+	((TP/DP)\\TP) -> {'left': '(TP/DP)', 'right': 'TP', 'combinator: '\\'}
+
+	I need to find the primary combinator and split by that. 
+
+	"""
+	if chunk != None and chunk['combinator'] == '' and chunk['right'] == '' and chunk['left'][-1]== ')':
+		split = chunk['left'].split('/')
+		left = balance_parens('/'.join(split[:-1])).strip()
+		right = balance_parens(split[-1]).strip()
+
+		return {'left': left, 'right': right, 'combinator':'/'}
+	else:
+		return chunk
 
 
 def combine(goal_buffer, tag, tr_rules):
+	## Make sure goal buffer is in the right format
+	goal_buffer = fix_chunk(goal_buffer)
+
 	combined = apply_all(tr_rules, tag, goal_buffer)
 	if combined != None:
 		return(combined)
@@ -1198,6 +1233,18 @@ def test_combine(tr_rules):
 						tr_rules)
 	assert make_rule(combined) == 'DP'
 
+	combined = combine({'left': '(TP/(TP\\DP))',
+						'right': '',
+						'combinator': ''},
+					   {'left': '(TP\\DP)',
+						'right': 'DP',
+						'combinator': '/'},
+						tr_rules)
+	print(combined)
+	assert make_rule(combined) == '(TP/DP)'
+
+	## TO DO: write tests for when it should fail
+
 
 def train(actr_model, model_type, sents):
 	num_prev_tags = sum(actr_model.base_count.values())
@@ -1234,8 +1281,11 @@ def print_states(tr_rules, tag_list, word_list):
 	goal_buffer = None
 	for i,tag_label in enumerate(tag_list):
 		tag = syntax_chunks_wd[tag_label]
-		# print()
-		# print('goal_buffer befpre', goal_buffer)
+		print()
+		print(word_list[i])
+		print('goal_buffer before', goal_buffer)
+		print('tag', tag)
+
 		goal_buffer = combine(tr_rules = tr_rules, tag = tag, goal_buffer = goal_buffer)
 		
 		# print('word,tag', word_list[i], tag)
@@ -1259,8 +1309,11 @@ test_combine(type_raising_rules)
 
 ## TO DO: Write a bunch of tests
 
+word_list = 'its  engineer talked-about  an  politician and  participated playfully to their good home .'.split()
 
+tag_list = ['Det', 'NP', 'Vt_act', 'Det', 'NP', 'conj', 'Vt_loc', 'Adv', 'Prep', 'Det', 'Adj', 'NP', 'eos']
 
+print_states(type_raising_rules, tag_list, word_list)
 # tag = {'left': '(TP\\DP)', 'right': 'DP', 'combinator': '/'}
 
 # chunk = {'left': ' (TP/(TP\\DP))', 'right': '', 'combinator': ''}
