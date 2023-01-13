@@ -265,6 +265,12 @@ common_syntax_chunks = {
 		'combinator': '/',
 	},
 
+	'Adj': {
+		'left': 'NP',
+		'right': 'NP',
+		'combinator': '/',
+	},
+
 	'Adv': {
 		'left': 'TP',
 		'right': 'TP',
@@ -272,7 +278,7 @@ common_syntax_chunks = {
 	},
 
 	'conj': {
-		'left': ' (TP/(TP\\DP))',
+		'left': '(TP/(TP\\DP))',
 		'right': 'TP',
 		'combinator': '\\',
 	},
