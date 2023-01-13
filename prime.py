@@ -20,8 +20,8 @@ np.random.seed(7)
 
 sd = 'uniform'
 num_parts = 1280
-sanity_check = True
-save_priming_preds = False 
+sanity_check = False
+save_priming_preds = True
 understand_progrrc = False 
 understand_reanalysis = False 
 
@@ -214,9 +214,6 @@ def save_preds(preds, fname):
 
 
 
-ep_preds = []
-wd_preds = []
-wd2_preds = []
 
 def main():
 
@@ -224,6 +221,10 @@ def main():
 		os.makedirs('./predictions/')
 
 	stim_fnames = []
+	ep_preds = []
+	wd_preds = []
+	wd2_preds = []
+
 
 	for a in ['1','2','3','4']:
 		for b in ['A', 'B', 'C', 'D']:
@@ -270,6 +271,12 @@ def main():
 		with open('./declmem/lexical_chunks_wd2.pkl', 'rb') as f:
 			lexical_chunks_wd2 = pickle.load(f)
 
+		with open('./declmem/syntax_chunks_wd.pkl', 'rb') as f:
+			syntax_chunks_wd = pickle.load(f)
+
+		with open('./declmem/lexical_chunks_wd.pkl', 'rb') as f:
+			lexical_chunks_wd = pickle.load(f)
+
 		with open('./declmem/syntax_chunks_ep.pkl', 'rb') as f:
 			syntax_chunks_ep = pickle.load(f)
 
@@ -294,7 +301,7 @@ def main():
 								syntax_chunks_ep,
 								lexical_chunks_ep,
 								type_raising_rules,
-								supertagger.supertag_sentence)
+								supertagger.supertag_sentence2)
 
 		actr_model_wd2 =  actr_model(decay,
 								max_activation,
@@ -306,10 +313,21 @@ def main():
 								type_raising_rules,
 								supertagger.supertag_sentence)
 
+		actr_model_wd =  actr_model(decay,
+								max_activation,
+								noise_sd,
+								latency_factor,
+								latency_exponent,
+								syntax_chunks_wd,
+								lexical_chunks_wd,
+								type_raising_rules,
+								supertagger.supertag_sentence2)
+
 		for sent in sents:
 			print(sent)
-			print('EP', actr_model_ep.supertag_sentence(actr_model_ep, sent)[1])
-			print('WD2', actr_model_ep.supertag_sentence(actr_model_wd2, sent)[1])
+			# print('EP', actr_model_ep.supertag_sentence(actr_model_ep, sent)[1])
+			# print('WD2', actr_model_wd2.supertag_sentence(actr_model_wd2, sent)[1])
+			print('WD', actr_model_wd.supertag_sentence(actr_model_wd, sent, print_stages=False)[1])
 			print()
 
 			# goal_buffer, supertags, words, act_vals = actr_model_ep.supertag_sentence(actr_model_ep, sent)
@@ -352,14 +370,24 @@ def main():
 				curr_ep_preds = generate_priming_preds(ep_model_name, curr_stim_fname, i)
 				ep_preds.extend(curr_ep_preds)
 
-				# WD2 preds
+				# WD preds
+
 				random.seed(i)
 				np.random.seed(i)
 
-				wd2_model_name = './trained_models/wd2_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+				wd_model_name = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
 
-				curr_wd2_preds = generate_priming_preds(wd2_model_name, curr_stim_fname, i)
-				wd2_preds.extend(curr_wd2_preds)
+				curr_wd_preds = generate_priming_preds(wd_model_name, curr_stim_fname, i)
+				wd_preds.extend(curr_wd_preds)
+
+				# WD2 preds
+				# random.seed(i)
+				# np.random.seed(i)
+
+				# wd2_model_name = './trained_models/wd2_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+
+				# curr_wd2_preds = generate_priming_preds(wd2_model_name, curr_stim_fname, i)
+				# wd2_preds.extend(curr_wd2_preds)
 
 
 				if i%10 == 0:
@@ -367,11 +395,12 @@ def main():
 
 
 			prime_fname_ep = './predictions/ep_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
+			prime_fname_wd = './predictions/wd_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
 
 			prime_fname_wd2 = './predictions/wd2_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
 
 			save_preds(ep_preds, prime_fname_ep)
-
+			save_preds(wd_preds, prime_fname_wd)
 			save_preds(wd2_preds, prime_fname_wd2)
 
 	if understand_progrrc:

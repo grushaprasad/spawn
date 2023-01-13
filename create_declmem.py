@@ -60,7 +60,7 @@ for noun in all_nouns:
 
 	lexical_chunks_ep[noun] = {'syntax': ['NP', 'NP_ProgP', 'NP_VoiceP', 'NP_CP']}
 
-	lexical_chunks_wd[noun] = {'syntax': ['NP', 'NP_CP', 'NP_CP_null']}
+	lexical_chunks_wd[noun] = {'syntax': ['NP', 'NP_CP']}
 	lexical_chunks_wd2[noun] = {'syntax': ['NP', 'NP_CP']}
 
 
@@ -128,7 +128,7 @@ lexical_chunks_wd2['who'] = {'syntax' : ['compsubj', 'compobj']}
 # lexical_chunks_wd2['comp_del'] = {'syntax' : ['compsubj_pass', 'compsubj_prog','compobj']}
 
 lexical_chunks_ep['comp_del'] = {'syntax' : ['compobj_null', 'NP_CP']}
-lexical_chunks_wd['comp_del'] = {'syntax' : ['compsubj', 'compobj']}
+lexical_chunks_wd['comp_del'] = {'syntax' : ['compobj_null', 'comppass_null', 'compprog_null', 'NP_CP']}
 lexical_chunks_wd2['comp_del'] = {'syntax' : ['compobj_null', 'compsubj_null', 'NP_CP']}
 
 lexical_chunks_ep['was'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
@@ -230,7 +230,7 @@ common_syntax_chunks = {
 	},
 
 	'compobj_null': {
-		'left': 'CP_null',
+		'left': 'CP',
 		'right': '(((TP\\DP)/DP)/DP)',
 		'combinator': '/'
 	},
@@ -318,25 +318,25 @@ syntax_chunks_ep['NP_ProgP'] = {
 								'combinator': '/'
 								}
 
-syntax_chunks_ep['compobj_null'] = {
-								'left': 'CP',
-								'right': '(((TP\\DP)/DP)/DP)',
-								'combinator': '/'
-								}
+# syntax_chunks_ep['compobj_null'] = {
+# 								'left': 'CP',
+# 								'right': '(((TP\\DP)/DP)/DP)',
+# 								'combinator': '/'
+# 								}
 
 
 
-syntax_chunks_wd['NP_CP_null'] = {
-								'left': 'NP',
-								'right': 'CP_null',
-								'combinator': '/'
-								}
+# syntax_chunks_wd['NP_CP_null'] = {
+# 								'left': 'NP',
+# 								'right': 'CP_null',
+# 								'combinator': '/'
+# 								}
 
-syntax_chunks_wd['compsubj_null'] = {
-								'left': 'CP_null',
-								'right': '(TP\\DP)',
-								'combinator': '/'
-								}
+# syntax_chunks_wd['compsubj_null'] = {
+# 								'left': 'CP_null',
+# 								'right': '(TP\\DP)',
+# 								'combinator': '/'
+# 								}
 
 
 syntax_chunks_wd2['compsubj_null'] = {
@@ -345,9 +345,22 @@ syntax_chunks_wd2['compsubj_null'] = {
 								'combinator': '/'
 								}
 
+
 syntax_chunks_wd2['compobj_null'] = {
 								'left': 'CP',
 								'right': '(((TP\\DP)/DP)/DP)',
+								'combinator': '/'
+								}
+
+syntax_chunks_wd['comppass_null'] = {
+								'left': 'CP',
+								'right': 'VoiceP',
+								'combinator': '/'
+								}
+
+syntax_chunks_wd['compprog_null'] = {
+								'left': 'CP',
+								'right': '(VoiceP/ProgP)',
 								'combinator': '/'
 								}
 
@@ -388,8 +401,8 @@ with open('./declmem/lexical_chunks_ep.pkl', 'wb') as f:
 		pickle.dump(lexical_chunks_ep, f)
 
 
-# with open('./declmem/lexical_chunks_wd.pkl', 'wb') as f:
-# 		pickle.dump(lexical_chunks_wd, f)
+with open('./declmem/lexical_chunks_wd.pkl', 'wb') as f:
+		pickle.dump(lexical_chunks_wd, f)
 
 with open('./declmem/lexical_chunks_wd2.pkl', 'wb') as f:
 		pickle.dump(lexical_chunks_wd2, f)
@@ -399,8 +412,8 @@ with open('./declmem/syntax_chunks_ep.pkl', 'wb') as f:
 		pickle.dump(syntax_chunks_ep, f)
 
 
-# with open('./declmem/syntax_chunks_wd.pkl', 'wb') as f:
-# 		pickle.dump(syntax_chunks_wd, f)
+with open('./declmem/syntax_chunks_wd.pkl', 'wb') as f:
+		pickle.dump(syntax_chunks_wd, f)
 
 with open('./declmem/syntax_chunks_wd2.pkl', 'wb') as f:
 		pickle.dump(syntax_chunks_wd2, f)
