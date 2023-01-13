@@ -1,5 +1,6 @@
 import numpy as np 
 import create_declmem
+import os
 
 ## For now I will not worry about plausibility 
 
@@ -21,7 +22,8 @@ num_sents = 10000
 
 fname = './data/train%s.txt'%(str(num_sents))
 
-
+if not os.path.isdir('./data/'):
+	os.makedirs('./data/')
 
 def generate_amv_trans(subj = None):
 	if subj == None:

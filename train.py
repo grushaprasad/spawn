@@ -8,6 +8,7 @@ import pickle
 from actr_model import actr_model
 import supertagger
 import csv
+import os
 
 
 random.seed(7)
@@ -48,8 +49,14 @@ with open('./declmem/syntax_chunks_wd2.pkl', 'rb') as f:
 with open('./declmem/lexical_chunks_wd2.pkl', 'rb') as f:
 	lexical_chunks_wd2 = pickle.load(f)
 
+with open('./declmem/type_raising_rules.pkl', 'rb') as f:
+	type_raising_rules = pickle.load(f)
+
 with open(train_fname,'r') as f:
 	train_dat = f.readlines()
+
+if not os.path.isdir('./trained_models/'):
+	os.makedirs('./trained_models/')
 
 
 train_dat = [x.strip() for x in train_dat]
@@ -68,7 +75,8 @@ latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4
 
 #for num_sents in [100,1000,10000]:
 #for num_sents in [100,1000]:
-for num_sents in [100,500]:
+# for num_sents in [100,500]:
+for num_sents in [100]:
 #for num_sents in [10000]:
 	print('Num sents: ', num_sents)
 	sds = []
@@ -98,6 +106,7 @@ for num_sents in [100,500]:
 							  	  latency_exponent,
 								  syntax_chunks_ep,
 								  lexical_chunks_ep,
+								  type_raising_rules,
 								  supertagger.supertag_sentence)
 
 
