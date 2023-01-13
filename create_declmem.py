@@ -1,4 +1,5 @@
 import pickle
+import os
 
 animate_nouns = list(set(['prince', 'duke', 'children', 'guardian',  'toddler', 'parents',  'singer', 'fans', 'princess', 'magician', 'employee', 'manager', 'doctor', 'nurse','student', 'teacher', 'clerk', 'spy', 'agent', 'pharmacist', 'patient', 'troops', 'terrorists', 'lion', 'hunter', 'senator', 'assassin', 'analyst', 'client', 'politician', 'party', 'king', 'genie', 'businessman', 'partner', 'executive', 'accountant', 'policeman', 'kidnapper', 'witch', 'peasant', 'suspect', 'investigator', 'prisoners', 'colonel', 'dog', 'boy', 'monkey', 'hatter', 'thief', 'officer', 'dentist', 'son', 'captain', 'team', 'actress', 'director', 'media', 'governor', 'president', 'valedictorian', 'family', 'widow', 'teenager', 'friend', 'woman', 'daughter', 'athlete', 'coach', 'boy', 'lady', 'secretary', 'visitor', 'chemist', 'writer', 'physicist', 'journalist', 'gymnast', 'coach', 'musician', 'crowd', 'teacher', 'students', 'hairdresser', 'customer', 'defendant', 'lawyer', 'engineer', 'licensor', 'industrialist', 'auditor', 'patient', 'hygenist', 'thief', 'victim', 'warden', 'prisoner', 'student', 'researcher', 'electrician', 'company', 'landlord', 'tenants', 'comedian', 'audience', 'kid', 'janitor', 'employees', 'cashier' ,'customer','organization', 'government', 'broker', 'company', 'entrepreneur', 'industrialist', 'man', 'spy', 'actor', 'reporter', 'poet', 'writer', 'driver', 'passenger', 'priest', 'mob', 'management', 'employee', 'dancer', 'trainer', 'influencer', 'fans', 'girl', 'cat', 'toddler', 'dog', 'stranger', 'applicant', 'company', 'professor', 'university', 'chef', 'restaurant', 'developer', 'team', 'culprit', 'investigator', 'apprentice', 'artist', 'painter', 'student', 'robot', 'illustrator', 'soldier', 'general', 'writer', 'scholar', 'blacksmith', 'scholars', 'psychologist', 'officer', 'assistant', 'principal', 'administration', 'man', 'sister', 'plumber', 'carpenter', 'speaker', 'chairman', 'producer', 'association', 'elf', 'magician', 'therapist', 'doctor', 'protestors', 'authority', 'scientist', 'journalist', 'dragon', 'wizard', 'programmer', 'supervisor', 'woman', 'media', 'celebrity', 'builder', 'architect', 'secretary']))
 
@@ -345,6 +346,16 @@ syntax_chunks_wd2['compobj_null'] = {
 								}
 
 
+# tags and the list of other tags they can be type raised to
+type_raising_rules = {
+	'DP': [
+		{
+			'left': 'TP',
+			'right': '(TP\\DP)',
+			'combinator': '/'
+		}
+	]
+}
 
 
 # with open('./data/rrcs.txt', 'r') as f:
@@ -361,6 +372,10 @@ syntax_chunks_wd2['compobj_null'] = {
 
 
 # missing_words = [x for x in stim_vocab if x not in all_vocab]
+
+if not os.path.isdir('./declmem/'):
+	os.makedirs('./declmem/')
+
 
 # print(missing_words)
 with open('./declmem/lexical_chunks_ep.pkl', 'wb') as f:
@@ -383,3 +398,6 @@ with open('./declmem/syntax_chunks_ep.pkl', 'wb') as f:
 
 with open('./declmem/syntax_chunks_wd2.pkl', 'wb') as f:
 		pickle.dump(syntax_chunks_wd2, f)
+
+with open('./declmem/type_raising_rules.pkl', 'wb') as f:
+	pickle.dump(type_raising_rules, f)
