@@ -3,7 +3,7 @@ from copy import deepcopy
 import math
 
 class actr_model:
-	def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, supertag_function):
+	def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, type_raising_rules, supertag_function):
 
 		self.base_count = {key:0 for key in syntax_chunks}
 
@@ -30,6 +30,8 @@ class actr_model:
 		self.syntax_chunks = syntax_chunks
 
 		self.lexical_chunks = lexical_chunks
+
+		self.type_raising_rules = type_raising_rules
 
 		self.supertag_sentence = supertag_function
 
