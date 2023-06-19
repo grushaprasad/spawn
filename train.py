@@ -5,7 +5,7 @@ from copy import deepcopy
 import numpy as np
 import pickle
 
-from actr_model import actr_model
+from model import actr_model
 import supertagger
 import csv
 import os
@@ -27,7 +27,7 @@ np.random.seed(7)
 # wd_fname = './trained_models/wd_trained_1k_3amv.pkl' 
 # ep_fname = './trained_models/ep_trained_1k_3amv.pkl'
 train_fname = './data/train10000.txt'
-
+# train_fname = './test_sents_supertagger.txt'
 
 
 
@@ -43,14 +43,17 @@ with open('./declmem/syntax_chunks_wd.pkl', 'rb') as f:
 with open('./declmem/lexical_chunks_wd.pkl', 'rb') as f:
 	lexical_chunks_wd = pickle.load(f)
 
-with open('./declmem/syntax_chunks_wd2.pkl', 'rb') as f:
-	syntax_chunks_wd2 = pickle.load(f)
+# with open('./declmem/syntax_chunks_wd2.pkl', 'rb') as f:
+# 	syntax_chunks_wd2 = pickle.load(f)
 
-with open('./declmem/lexical_chunks_wd2.pkl', 'rb') as f:
-	lexical_chunks_wd2 = pickle.load(f)
+# with open('./declmem/lexical_chunks_wd2.pkl', 'rb') as f:
+# 	lexical_chunks_wd2 = pickle.load(f)
 
 with open('./declmem/type_raising_rules.pkl', 'rb') as f:
 	type_raising_rules = pickle.load(f)
+
+with open('./declmem/null_mapping.pkl', 'rb') as f:
+		null_mapping = pickle.load(f)
 
 with open(train_fname,'r') as f:
 	train_dat = f.readlines()
@@ -66,21 +69,23 @@ train_dat = [x.strip() for x in train_dat]
 # num_parts = 512
 # num_parts = 1
 num_parts = 1280
-global_sd = 'uniform'
-# global_sd = 1
+# global_sd = 'uniform'
+global_sd = 1
 
 # Hyperparameters that do not change
 decay = 0.5           # Standard value for ACT-R models
 max_activation = 1.5  # Standard value for ACT-R models
 latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4 from Lewis and Vasisth)
 
+max_iters = 5000  # Number of iterations before "giving up" and trying again
+
 
 
 #for num_sents in [100,1000,10000]:
 #for num_sents in [100,1000]:
-for num_sents in [100,500]:
+# for num_sents in [100,500]:
 # for num_sents in [100]:
-# for num_sents in [10000]:
+for num_sents in [10000]:
 	print('Num sents: ', num_sents)
 	sds = []
 	for i in range(num_parts):
@@ -116,15 +121,16 @@ for num_sents in [100,500]:
 		np.random.seed(i)
 
 		## Train EP
-		# actr_model_ep = actr_model(decay,
-		# 						  max_activation,
-		# 						  noise_sd,
-		# 						  latency_factor,
-		# 					  	  latency_exponent,
-		# 						  syntax_chunks_ep,
-		# 						  lexical_chunks_ep,
-		# 						  type_raising_rules,
-		# 						  supertagger.supertag_sentence)
+		actr_model_ep = actr_model(decay,
+								  max_activation,
+								  noise_sd,
+								  latency_factor,
+							  	  latency_exponent,
+								  syntax_chunks_ep,
+								  lexical_chunks_ep,
+								  type_raising_rules,
+								  null_mapping,
+								  max_iters)
 
 
 		# # Note I am updating base activations only at the end of all training. Do I want to update after every sentence or every n sentences? (This should only affect it if I have globally ambiguous sentences ? )
@@ -132,19 +138,22 @@ for num_sents in [100,500]:
 		# # actr_model_ep.update_base_activation()
 		# # actr_model_ep.update_lexical_activation()
 
-		# for sent in curr_train_dat:
-		# 	actr_model_ep.update_counts([sent])
-		# 	actr_model_ep.update_base_activation()
-		# 	actr_model_ep.update_lexical_activation()
+		# print('Training EP')
+		# for ind,sent in enumerate(curr_train_dat):
+		# 	if ind%100 == 0:
+		# 		print(f'Trained {ind} sentences')
+			actr_model_ep.update_counts([sent])
+			actr_model_ep.update_base_activation()
+			actr_model_ep.update_lexical_activation()
 
-		# ep_fname = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+		ep_fname = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
 
-		# with open(ep_fname, 'wb') as f:
-		# 	pickle.dump(actr_model_ep, f)
+		with open(ep_fname, 'wb') as f:
+			pickle.dump(actr_model_ep, f)
 
 
-		# random.seed(i)  #reset seeds to be as close to EP as possible
-		# np.random.seed(i)
+		random.seed(i)  #reset seeds to be as close to EP as possible
+		np.random.seed(i)
 
 		actr_model_wd = actr_model(decay,
 							  max_activation,
@@ -154,19 +163,18 @@ for num_sents in [100,500]:
 							  syntax_chunks_wd,
 							  lexical_chunks_wd,
 							  type_raising_rules,
-							  supertagger.supertag_sentence)
+							  null_mapping,
+							  max_iters)
 
 
 		# # Train WD
 
-		# # actr_model_wd.update_counts(curr_train_dat)
-		# # actr_model_wd.update_base_activation()
-		# # actr_model_wd.update_lexical_activation()
-
 		random.seed(i)  #reset seeds to be as close to EP as possible
 		np.random.seed(i)
-
-		for sent in curr_train_dat:
+		# print('Training WD')
+		# for ind,sent in enumerate(curr_train_dat):
+		# 	if ind%100 == 0:
+		# 		print(f'Trained {ind} sentences')
 			actr_model_wd.update_counts([sent])
 			actr_model_wd.update_base_activation()
 			actr_model_wd.update_lexical_activation()
@@ -205,8 +213,8 @@ for num_sents in [100,500]:
 		# 	pickle.dump(actr_model_wd2, f)
 
 
-		if i%5 == 0:
-			print('Trained %s models'%str(i+1))
+		# if i%5 == 0:
+		# 	print('Trained %s models'%str(i+1))
 
 	sd_fname = './trained_models/noisesds_train%sk_sd%s.csv'%(str(num_sents/1000), str(global_sd))
 
