@@ -1,3 +1,7 @@
+def convert_to_rule(state):
+    if state != None:
+        return(state['left'] + state['combinator'] + state['right'])
+
 def forward_appl(chunk1, chunk2):
     # print('In forward')
     # print('chunk1', chunk1)
