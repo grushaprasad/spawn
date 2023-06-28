@@ -43,17 +43,20 @@ with open('./declmem/syntax_chunks_wd.pkl', 'rb') as f:
 with open('./declmem/lexical_chunks_wd.pkl', 'rb') as f:
 	lexical_chunks_wd = pickle.load(f)
 
-# with open('./declmem/syntax_chunks_wd2.pkl', 'rb') as f:
-# 	syntax_chunks_wd2 = pickle.load(f)
+with open('./declmem/syntax_chunks_wd2.pkl', 'rb') as f:
+	syntax_chunks_wd2 = pickle.load(f)
 
-# with open('./declmem/lexical_chunks_wd2.pkl', 'rb') as f:
-# 	lexical_chunks_wd2 = pickle.load(f)
+with open('./declmem/lexical_chunks_wd2.pkl', 'rb') as f:
+	lexical_chunks_wd2 = pickle.load(f)
 
 with open('./declmem/type_raising_rules.pkl', 'rb') as f:
 	type_raising_rules = pickle.load(f)
 
 with open('./declmem/null_mapping.pkl', 'rb') as f:
 		null_mapping = pickle.load(f)
+
+with open('./declmem/null_mapping_wd2.pkl', 'rb') as f:
+		null_mapping_wd2 = pickle.load(f)
 
 with open(train_fname,'r') as f:
 	train_dat = f.readlines()
@@ -79,7 +82,8 @@ latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4
 
 max_iters = 1000  # Number of iterations before "giving up" and starting afresh. After half of these iterations parsing ignores priors
 
-
+# models = ['WD', 'WD2', 'EP']
+models = ['WD2']
 
 #for num_sents in [100,1000,10000]:
 #for num_sents in [100,1000]:
@@ -123,110 +127,115 @@ for num_sents in [100,500]:
 
 		
 
-		random.seed(seed) #reset seeds right before training to be as close to WD as possible
-		np.random.seed(seed)
+		
 
 		## Train EP
-		actr_model_ep = actr_model(decay,
+		if 'EP' in models:
+			random.seed(seed) #reset seeds right before training to be as close to WD as possible
+			np.random.seed(seed)
+			actr_model_ep = actr_model(decay,
+									  max_activation,
+									  noise_sd,
+									  latency_factor,
+								  	  latency_exponent,
+									  syntax_chunks_ep,
+									  lexical_chunks_ep,
+									  type_raising_rules,
+									  null_mapping,
+									  max_iters)
+
+			# print('Training EP')
+			for ind,sent in enumerate(curr_train_dat):
+				# print(sent)
+				# if ind%100 == 0:
+				# 	print(f'Trained {ind} sentences')
+				actr_model_ep.update_counts([sent])
+				actr_model_ep.update_base_activation()
+				actr_model_ep.update_lexical_activation()
+
+			failed_sents.append(['EP', i, noise_sd, actr_model_ep.num_failed_sents])
+
+
+			ep_fname = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+
+			with open(ep_fname, 'wb') as f:
+				pickle.dump(actr_model_ep, f)
+
+		if 'WD' in models:
+			random.seed(seed)  #reset seeds to be as close to EP as possible
+			np.random.seed(seed)
+
+			actr_model_wd = actr_model(decay,
 								  max_activation,
 								  noise_sd,
 								  latency_factor,
-							  	  latency_exponent,
-								  syntax_chunks_ep,
-								  lexical_chunks_ep,
+								  latency_exponent,
+								  syntax_chunks_wd,
+								  lexical_chunks_wd,
 								  type_raising_rules,
 								  null_mapping,
 								  max_iters)
 
 
-		# # Note I am updating base activations only at the end of all training. Do I want to update after every sentence or every n sentences? (This should only affect it if I have globally ambiguous sentences ? )
-		# # actr_model_ep.update_counts(curr_train_dat)
-		# # actr_model_ep.update_base_activation()
-		# # actr_model_ep.update_lexical_activation()
+			# # Train WD
 
-		# print('Training EP')
-		for ind,sent in enumerate(curr_train_dat):
-			# print(sent)
-			# if ind%100 == 0:
-			# 	print(f'Trained {ind} sentences')
-			actr_model_ep.update_counts([sent])
-			actr_model_ep.update_base_activation()
-			actr_model_ep.update_lexical_activation()
+			random.seed(seed)  #reset seeds to be as close to EP as possible
+			np.random.seed(seed)
+			# print('Training WD')
+			for ind,sent in enumerate(curr_train_dat):
+				# print(sent)
+				# if ind%100 == 0:
+				# 	print(f'Trained {ind} sentences')
+				actr_model_wd.update_counts([sent])
+				actr_model_wd.update_base_activation()
+				actr_model_wd.update_lexical_activation()
 
-		failed_sents.append(['EP', i, noise_sd, actr_model_ep.num_failed_sents])
+			failed_sents.append(['WD', i, noise_sd, actr_model_wd.num_failed_sents])
 
+			wd_fname = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
 
-		ep_fname = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
-
-		with open(ep_fname, 'wb') as f:
-			pickle.dump(actr_model_ep, f)
-
-
-		random.seed(seed)  #reset seeds to be as close to EP as possible
-		np.random.seed(seed)
-
-		actr_model_wd = actr_model(decay,
-							  max_activation,
-							  noise_sd,
-							  latency_factor,
-							  latency_exponent,
-							  syntax_chunks_wd,
-							  lexical_chunks_wd,
-							  type_raising_rules,
-							  null_mapping,
-							  max_iters)
-
-
-		# # Train WD
-
-		random.seed(seed)  #reset seeds to be as close to EP as possible
-		np.random.seed(seed)
-		# print('Training WD')
-		for ind,sent in enumerate(curr_train_dat):
-			# print(sent)
-			# if ind%100 == 0:
-			# 	print(f'Trained {ind} sentences')
-			actr_model_wd.update_counts([sent])
-			actr_model_wd.update_base_activation()
-			actr_model_wd.update_lexical_activation()
-
-		failed_sents.append(['WD', i, noise_sd, actr_model_wd.num_failed_sents])
-
-		wd_fname = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
-
-		with open(wd_fname, 'wb') as f:
-			pickle.dump(actr_model_wd, f)
+			with open(wd_fname, 'wb') as f:
+				pickle.dump(actr_model_wd, f)
 
 
 		## Train WD2
+		if 'WD2' in models:
+			random.seed(seed)  #reset seeds to be as close to EP as possible
+			np.random.seed(seed)
 
-		# random.seed(i)  #reset seeds to be as close to EP as possible
-		# np.random.seed(i)
-
-		# actr_model_wd2 = actr_model(decay,
-		# 					  max_activation,
-		# 					  noise_sd,
-		# 					  latency_factor,
-		# 					  latency_exponent,
-		# 					  syntax_chunks_wd2,
-		# 					  lexical_chunks_wd2,
-		# 					  type_raising_rules,
-		# 					  supertagger.supertag_sentence2)
-
-		# for sent in curr_train_dat:
-		# 	actr_model_wd2.update_counts([sent])
-		# 	actr_model_wd2.update_base_activation()
-		# 	actr_model_wd2.update_lexical_activation()
+			actr_model_wd2 = actr_model(decay,
+								  max_activation,
+								  noise_sd,
+								  latency_factor,
+								  latency_exponent,
+								  syntax_chunks_wd2,
+								  lexical_chunks_wd2,
+								  type_raising_rules,
+								  null_mapping_wd2,
+								  max_iters)
 
 
-		# wd2_fname = './trained_models/wd2_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+			# # Train WD
 
-		# with open(wd2_fname, 'wb') as f:
-		# 	pickle.dump(actr_model_wd2, f)
+			random.seed(seed)  #reset seeds to be as close to EP as possible
+			np.random.seed(seed)
+			# print('Training WD')
+			for ind,sent in enumerate(curr_train_dat):
+				# print(sent)
+				# if ind%100 == 0:
+				# 	print(f'Trained {ind} sentences')
+				actr_model_wd2.update_counts([sent])
+				actr_model_wd2.update_base_activation()
+				actr_model_wd2.update_lexical_activation()
 
+			failed_sents.append(['WD', i, noise_sd, actr_model_wd2.num_failed_sents])
 
-		# if i%5 == 0:
-		# 	print('Trained %s models'%str(i+1))
+			wd2_fname = './trained_models/wd2_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+
+			with open(wd2_fname, 'wb') as f:
+				pickle.dump(actr_model_wd2, f)
+
+		
 
 	# sd_fname = './trained_models/noisesds_train%sk_sd%s.csv'%(str(num_sents/1000), str(global_sd))
 	failed_sent_fname = './trained_models/failed_sents_train%sk_sd%s.csv'%(str(num_sents/1000), str(global_sd))

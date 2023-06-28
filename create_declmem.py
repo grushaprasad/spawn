@@ -135,7 +135,7 @@ lexical_chunks_wd2['who'] = {'syntax' : ['compsubj', 'compobj']}
 
 lexical_chunks_ep['comp_del'] = {'syntax' : ['compobj_null']}
 lexical_chunks_wd['comp_del'] = {'syntax' : ['compobj_null', 'comppass_null', 'compprog_null']}
-# lexical_chunks_wd2['comp_del'] = {'syntax' : ['compobj_null', 'compsubj_null']}
+lexical_chunks_wd2['comp_del'] = {'syntax' : ['compobj_null', 'compsubj_null']}
 
 lexical_chunks_ep['was'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
 lexical_chunks_wd['was'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
@@ -144,7 +144,7 @@ lexical_chunks_wd2['was'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
 # lexical_chunks_wd['aux_del'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
 
 ## Can bring back aux_del to WD2 if I want
-# lexical_chunks_wd2['aux_del'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
+lexical_chunks_wd2['aux_del'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
 
 
 
@@ -394,10 +394,10 @@ null_mapping = {
 	'NP_CP': 'comp_del'
 }
 
-# null_mapping_wd2 = {
-# 	'NP_CP_null': 'comp_del'
-# 	'compsubj_null': 'aux_del'
-# }
+null_mapping_wd2 = {
+	'NP_CP': 'comp_del',
+	'compsubj_null': 'aux_del'
+}
 
 # with open('./data/rrcs.txt', 'r') as f:
 # 	stims = f.readlines()
@@ -445,3 +445,6 @@ with open('./declmem/type_raising_rules.pkl', 'wb') as f:
 
 with open('./declmem/null_mapping.pkl', 'wb') as f:
 	pickle.dump(null_mapping, f)
+
+with open('./declmem/null_mapping_wd2.pkl', 'wb') as f:
+	pickle.dump(null_mapping_wd2, f)
