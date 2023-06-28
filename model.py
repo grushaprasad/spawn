@@ -73,7 +73,6 @@ class actr_model:
 			time_seq = self.time + self.eps - curr_tag_instance  #if we don't add eps the last tag will be 0
 			# print('time_seq',time_seq)
 			activation = sum(np.power(time_seq, -self.decay))
-			# activation = sum(np.power(time_seq, -self.decay))
 
 		if activation <= 0: # cannot log zero or negative 
 			return 0
@@ -106,7 +105,7 @@ class actr_model:
 					prob = 0
 				else:
 					prob = word_dict[tag]/word_sum
-				#self.lexical_act[word][tag] += prob*self.max_activation  #Why was I adding before??? 
+
 				self.lexical_act[word][tag] = prob*self.max_activation
 
 		## update activation from words to null
@@ -132,19 +131,15 @@ class actr_model:
 			# print(sent)
 			self.num_retries = 0 #set the number of retries for any sentence to be zero. 
 			final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent)
-			if final_state == None:
+			if final_state == None: #if model "gave up" after max tries
 				self.num_failed_sents +=1 #keep track of how many sentences its retried. 
 				self.failed_sents.append(sent)
 				# print(f'{sent} not parsed')
 
-			while final_state == None: #if supertag fails because of hitting max tries
+			while final_state == None: # keep trying till a parse is found
 				self.num_retries +=1
 				final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent)
-				# if self.num_retries > 3:
-				# 	print(f'{sent} not parsed')
-				# 	final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent, print_stages=True)
-				# else:
-				# 	final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent)
+
 			if self.num_retries!=0:
 				print('num retries', self.num_retries, sent)
 			# print(tags)
@@ -167,14 +162,6 @@ class actr_model:
 						next_word = ccg_tag_list[j+1][0]
 					else:
 						next_word = None
-					#print(len(act))
-					#print(word, tag, act)
-
-					# time_for_tag = 0
-					# for x in act:
-					# 	time_for_tag += self.convert_to_rt(x)
-
-					#times = [self.convert_to_rt(x) for x in act]
 					
 					time_for_tag = self.convert_to_rt(act)
 
@@ -192,32 +179,6 @@ class actr_model:
 
 
 
-
-	# def update_counts(self, sents, tags):
-	# 	num_prev_tags = sum(self.base_count.values())
-
-	# 	for i,sent in enumerate(sents):
-	# 		curr_tag_list = tags[i].split()
-	# 		word_list = sent.split()
-	# 		ccg_tag_list = [(word_list[n], curr_tag_list[n]) for n in range(len(word_list))]
-
-	# 		for j, pair in enumerate(ccg_tag_list):
-	# 			num_prev_tags += 1
-	# 			word = pair[0]
-	# 			tag = pair[1]
-
-	# 			self.lexical_count[word][tag] +=1
-
-	# 			self.base_count[tag] += 1
-
-	# 			self.base_instance[tag].append(num_prev_tags)
-
-
-
-# def create_lexical_chunks(stimuli, model_type):
-# 	pos_dict = {
-# 		'rrc': ['det', 'noun', 'rcv', 'prep', 'det', 'noun', ]
-# 	}
 
 
 
