@@ -11,14 +11,16 @@ import supertagger
 import csv
 import os
 
-from actr_model import actr_model
+from model import actr_model
 import pandas as pd
+import supertagger
 
 
 random.seed(7)
 np.random.seed(7)
 
-sd = 'uniform'
+# sd = 'uniform'
+sd = 1
 num_parts = 1280
 sanity_check = False
 save_priming_preds = True
@@ -47,11 +49,13 @@ def generate_priming_preds(model_fname, stim_fname, part_id):
 			partial_states = [{'left': 'DP', 'right': 'PP', 'combinator': '/'},
 					          {'left': 'TP', 'right': 'DP', 'combinator': '/'}]
 
-			final_state, tags, words, act_vals = model.supertag_sentence(model, sent, partial_states=partial_states)
+			parse_states, tags, words, act_vals = supertagger.supertag_sentence(model, sent, end_states=partial_states)
 
+			final_state = parse_states[-1]
 			final_state_rule = final_state['left'] + final_state['combinator'] + final_state['right']
-
-			if tags[-1] == 'Vt_pass':
+			if tags == None:
+				passive = 'NA'
+			elif tags[-1] == 'Vt_pass':
 				passive = 1
 			else:
 				passive = 0
@@ -221,9 +225,6 @@ def main():
 		os.makedirs('./predictions/')
 
 	stim_fnames = []
-	ep_preds = []
-	wd_preds = []
-	wd2_preds = []
 
 
 	for a in ['1','2','3','4']:
@@ -286,62 +287,91 @@ def main():
 		with open('./declmem/type_raising_rules.pkl', 'rb') as f:
 			type_raising_rules = pickle.load(f)
 
-		decay = 0.5           # Standard value for ACT-R models
+		with open('./declmem/null_mapping.pkl', 'rb') as f:
+			null_mapping = pickle.load(f)
+		max_iters = 10000
+
+		decay = 0.25          # Standard value for ACT-R models
 		max_activation = 1.5  # Standard value for ACT-R models
 		latency_exponent = 1  # Will always set this to 1 (because then 
 		noise_sd = 0.5
-		latency_factor = 0.4
+		latency_factor = 0.1
 
 
-		actr_model_ep =  actr_model(decay,
-								max_activation,
-								noise_sd,
-								latency_factor,
-								latency_exponent,
-								syntax_chunks_ep,
-								lexical_chunks_ep,
-								type_raising_rules,
-								supertagger.supertag_sentence2)
+		actr_model_ep = actr_model(decay,
+								  max_activation,
+								  noise_sd,
+								  latency_factor,
+							  	  latency_exponent,
+								  syntax_chunks_ep,
+								  lexical_chunks_ep,
+								  type_raising_rules,
+								  null_mapping,
+								  max_iters)
 
-		actr_model_wd2 =  actr_model(decay,
-								max_activation,
-								noise_sd,
-								latency_factor,
-								latency_exponent,
-								syntax_chunks_wd2,
-								lexical_chunks_wd2,
-								type_raising_rules,
-								supertagger.supertag_sentence)
+		# actr_model_wd2 =  actr_model(decay,
+		# 						max_activation,
+		# 						noise_sd,
+		# 						latency_factor,
+		# 						latency_exponent,
+		# 						syntax_chunks_wd2,
+		# 						lexical_chunks_wd2,
+		# 						type_raising_rules,
+		# 						supertagger.supertag_sentence2)
 
-		actr_model_wd =  actr_model(decay,
-								max_activation,
-								noise_sd,
-								latency_factor,
-								latency_exponent,
-								syntax_chunks_wd,
-								lexical_chunks_wd,
-								type_raising_rules,
-								supertagger.supertag_sentence2)
+		actr_model_wd = actr_model(decay,
+								  max_activation,
+								  noise_sd,
+								  latency_factor,
+							  	  latency_exponent,
+								  syntax_chunks_wd,
+								  lexical_chunks_wd,
+								  type_raising_rules,
+								  null_mapping,
+								  max_iters)
 
-		for sent in sents:
-			print(sent)
-			# print('EP', actr_model_ep.supertag_sentence(actr_model_ep, sent)[1])
-			# print('WD2', actr_model_wd2.supertag_sentence(actr_model_wd2, sent)[1])
-			print('WD', actr_model_wd.supertag_sentence(actr_model_wd, sent, print_stages=False)[1])
-			print()
+
+		# for sent in sents:
+		# 	print(sent)
+		# 	# print('EP', actr_model_ep.supertag_sentence(actr_model_ep, sent)[1])
+		# 	# print('WD2', actr_model_wd2.supertag_sentence(actr_model_wd2, sent)[1])
+		# 	print('WD', actr_model_wd.supertag_sentence(actr_model_wd, sent, print_stages=False)[1])
+		# 	print()
 
 			# goal_buffer, supertags, words, act_vals = actr_model_ep.supertag_sentence(actr_model_ep, sent)
 			# act_vals = [[round(x, 2) for x in item] for item in act_vals]
+		models = ['EP', 'WD', 'WD2']
+		sent = 'the lawyer being examined by the defendant was unreliable .'
+		for i, model in enumerate([actr_model_ep, actr_model_wd, actr_model_wd2]):
+			print('===============')
+			print(models[i])
 
-			# actr_model_ep.update_counts([sent])
-			# actr_model_ep.update_base_activation()
-			# actr_model_ep.update_lexical_activation()
+			comp_types = model.lexical_chunks['comp_del']['syntax']
+			comp_act_dict = {key:model.base_act[key] for key in comp_types}
+
+			print('Before', comp_act_dict)
+
+			model.update_counts([sent]*3)
+			model.update_base_activation()
+			model.update_lexical_activation()
+
+			comp_types = model.lexical_chunks['comp_del']['syntax']
+			comp_act_dict = {key:model.base_act[key] for key in comp_types}
+
+			print('After', comp_act_dict, '\n')
+		# print(actr_model_wd.base_act, '\n')
+		# print(actr_model_wd.base_count, '\n')
+		# print(actr_model_wd.base_instance, '\n')
+
 			# print('EP', supertags)
 			# print(act_vals)
 			# print(actr_model_ep.time)
 
 	if save_priming_preds:
-		for num_sents in [100, 500]:
+		for num_sents in [500]:
+			ep_preds = []
+			wd_preds = []
+			wd2_preds = []
 			print('---------------')
 			print(num_sents)
 			print(sd)
@@ -380,7 +410,7 @@ def main():
 				curr_wd_preds = generate_priming_preds(wd_model_name, curr_stim_fname, i)
 				wd_preds.extend(curr_wd_preds)
 
-				# WD2 preds
+				# # WD2 preds
 				# random.seed(i)
 				# np.random.seed(i)
 
@@ -397,11 +427,11 @@ def main():
 			prime_fname_ep = './predictions/ep_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
 			prime_fname_wd = './predictions/wd_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
 
-			prime_fname_wd2 = './predictions/wd2_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
+			# prime_fname_wd2 = './predictions/wd2_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
 
 			save_preds(ep_preds, prime_fname_ep)
 			save_preds(wd_preds, prime_fname_wd)
-			save_preds(wd2_preds, prime_fname_wd2)
+			# save_preds(wd2_preds, prime_fname_wd2)
 
 	if understand_progrrc:
 		for num_sents in [100]:

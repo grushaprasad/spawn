@@ -44,9 +44,11 @@ class actr_model:
 
 		self.lexical_null_act = {key:{key2: 0 for key2 in list(null_mapping.values())+['not-null']} for key in lexical_chunks}
 
-		self.num_retried_sents = 0
+		self.num_failed_sents = 0
 
 		self.num_retries = 0
+
+		self.failed_sents = []
 
 		self.max_iters = max_iters
 
@@ -70,15 +72,13 @@ class actr_model:
 			#time_seq = time_seq*self.time_factor   
 			time_seq = self.time + self.eps - curr_tag_instance  #if we don't add eps the last tag will be 0
 			# print('time_seq',time_seq)
-			activation = np.log(sum(np.power(time_seq, -self.decay)))
+			activation = sum(np.power(time_seq, -self.decay))
 			# activation = sum(np.power(time_seq, -self.decay))
 
-		# if activation == 0:
-		# 	return 0
-		# else:
-		# 	return np.log(activation)
-
-		return(max(0,activation))  # should this be 0 ir should this be eps?
+		if activation <= 0: # cannot log zero or negative 
+			return 0
+		else:
+			return max(0, np.log(activation)) # do not want negative activation
 
 	def compute_inhibition(self, tag, inhibition_list, curr_time):
 		inhibition_val = 0
@@ -87,11 +87,10 @@ class actr_model:
 				time_since_item = curr_time + self.eps - item['time']
 				inhibition_val += np.power(time_since_item, -self.decay)
 
-		# if inhibition_val == 0:
-		# 	return 0
-		# else:
-		# 	return np.log(inhibition_val)
-		return(max(0,np.log(inhibition_val)))  # should this be 0 ir should this be eps?
+		if inhibition_val <= 0:  # cannot log zero or negative 
+			return 0
+		else:
+			return max(0,np.log(inhibition_val)) # do not want negative inhibition
 
 	def update_base_activation(self):
 		# print(self.base_act)
@@ -134,56 +133,62 @@ class actr_model:
 			self.num_retries = 0 #set the number of retries for any sentence to be zero. 
 			final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent)
 			if final_state == None:
-				self.num_retried_sents +=1 #keep track of how many sentences its retried. 
+				self.num_failed_sents +=1 #keep track of how many sentences its retried. 
+				self.failed_sents.append(sent)
+				# print(f'{sent} not parsed')
 
 			while final_state == None: #if supertag fails because of hitting max tries
 				self.num_retries +=1
 				final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent)
-				# if self.num_retries > 20:
+				# if self.num_retries > 3:
+				# 	print(f'{sent} not parsed')
 				# 	final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent, print_stages=True)
 				# else:
 				# 	final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent)
+			if self.num_retries!=0:
+				print('num retries', self.num_retries, sent)
 			# print(tags)
 			# print(len(act_vals[0]))
 			# print(words[1], act_vals[1])
 
-			ccg_tag_list = [(words[n], tags[n], act_vals[n]) for n in range(len(words))]
-
+			
 			# print(sent)
 			# print(tags)
 			# print()
+			if final_state != None:
+				ccg_tag_list = [(words[n], tags[n], act_vals[n]) for n in range(len(words))]
 
-			for j, pair in enumerate(ccg_tag_list):
-				num_prev_tags += 1
-				word = pair[0]
-				tag = pair[1]
-				act = pair[2]
-				if j < len(ccg_tag_list)-1: #not last word
-					next_word = ccg_tag_list[j+1][0]
-				else:
-					next_word = None
-				#print(len(act))
-				#print(word, tag, act)
-
-				# time_for_tag = 0
-				# for x in act:
-				# 	time_for_tag += self.convert_to_rt(x)
-
-				#times = [self.convert_to_rt(x) for x in act]
-				
-				time_for_tag = self.convert_to_rt(act)
-
-				self.time += time_for_tag + 0.05  #50 ms for production rule firing 
-				
-				self.lexical_count[word][tag] +=1
-				if next_word:  #i.e. if there is a next word
-					if next_word in self.null_mapping.values():
-						self.lexical_null_count[word][next_word] +=1
+				for j, pair in enumerate(ccg_tag_list):
+					num_prev_tags += 1
+					word = pair[0]
+					tag = pair[1]
+					act = pair[2]
+					if j < len(ccg_tag_list)-1: #not last word
+						next_word = ccg_tag_list[j+1][0]
 					else:
-						self.lexical_null_count[word]['not-null'] +=1
-				self.base_count[tag] += 1
-				#self.base_instance[tag].append(num_prev_tags)
-				self.base_instance[tag].append(self.time)
+						next_word = None
+					#print(len(act))
+					#print(word, tag, act)
+
+					# time_for_tag = 0
+					# for x in act:
+					# 	time_for_tag += self.convert_to_rt(x)
+
+					#times = [self.convert_to_rt(x) for x in act]
+					
+					time_for_tag = self.convert_to_rt(act)
+
+					self.time += time_for_tag + 0.05  #50 ms for production rule firing 
+					
+					self.lexical_count[word][tag] +=1
+					if next_word:  #i.e. if there is a next word
+						if next_word in self.null_mapping.values():
+							self.lexical_null_count[word][next_word] +=1
+						else:
+							self.lexical_null_count[word]['not-null'] +=1
+					self.base_count[tag] += 1
+					#self.base_instance[tag].append(num_prev_tags)
+					self.base_instance[tag].append(self.time)
 
 
 

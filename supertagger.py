@@ -65,6 +65,9 @@ DP/NP NP_CP compprog_null Vt_act
 ## TO DO: Fix the inhibition thing because it is not enough to get the right parses on RC sentences during training.. (right now its crashing at the first rrc)
 
 def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'left': 'end', 'right': '', 'combinator': ''}]):
+	"""
+
+	"""
 	words = sentence.split() 
 	tr_rules = actr_model.type_raising_rules
 	null_words = actr_model.null_mapping.values()
@@ -79,16 +82,20 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 	max_iters = actr_model.max_iters 
 	num_iters = 0
 	curr_time = 0
+	use_priors = True  
 
 	# while(i < len(words)):
 	while(i < len(words) and num_iters < max_iters):
+		if num_iters > (max_iters/2): #ignore priors if things are taking too long
+			use_priors = False
 		num_iters +=1
 		if print_stages:
 			print()
+			print('curr_word', words[i])
 			print('words', words)
 			print('supertags', supertags)
-			print('curr_word', words[i])
-		goal_buffer = (i, parse_states[-1]) #or should this be parse_states[i] ?
+			# print('state before', parse_states[-1])
+		 #or should this be parse_states[i] ?
 		curr_word = words[i]
 
 		poss_tags = deepcopy(actr_model.lexical_chunks[curr_word]['syntax'])
@@ -100,7 +107,10 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 
 		# while j < max_tries:
 		while len(poss_tags) > 0:
-			curr_tag, curr_act = generate_supertag(actr_model, goal_buffer, curr_word, inhibition, poss_tags, curr_time)
+			goal_buffer = (i, parse_states[-1])
+			curr_tag, curr_act = generate_supertag(actr_model, goal_buffer, curr_word, inhibition, poss_tags, curr_time, use_priors=use_priors)
+
+			
 
 			curr_time += actr_model.convert_to_rt([curr_act])  #keep track of how much time each retrieval takes
 
@@ -108,7 +118,14 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 
 			curr_tag_chunk = actr_model.syntax_chunks[curr_tag]
 
-			combined = ccg.combine(tag = curr_tag_chunk, parse_state =  goal_buffer[1], tr_rules = tr_rules)
+			if print_stages:
+				print('retrieved tag', curr_tag)
+				# print('chunk', curr_tag_chunk)
+
+			combined = ccg.combine(tag = curr_tag_chunk, parse_state =  goal_buffer[-1], tr_rules = tr_rules)
+
+			if print_stages:
+				print(convert_to_rule(goal_buffer[-1]),convert_to_rule(curr_tag_chunk), convert_to_rule(combined))
 
 			goal_buffer = (i, combined)
 
@@ -123,7 +140,7 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 				# 	inhibition[goal_buffer_str].append(curr_tag)
 				poss_tags.remove(curr_tag)
 
-				j +=1
+				#j +=1
 
 		if i == len(words)-1 and combined not in end_states:
 			found_valid_tag = False
@@ -131,10 +148,14 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 		if found_valid_tag:
 			supertags.append(curr_tag)
 			parse_states.append(combined)
-			if words[i] == 'friend' and words[i+1] == 'a':
-				null_el = predict_null(curr_word, curr_tag, actr_model, print_prob=True) 
+
+			# check if there should be null
+			inhibit_key = (i,convert_to_rule(combined))
+			curr_inhibition = inhibition.get(inhibit_key, [])
+			if words[i] in []:
+				null_el = predict_null(actr_model, curr_word, curr_tag, curr_inhibition, curr_time, print_prob=True, use_priors=use_priors) 
 			else:
-				null_el = predict_null(curr_word, curr_tag, actr_model) 
+				null_el = predict_null(actr_model, curr_word, curr_tag, curr_inhibition, curr_time, use_priors=use_priors) 
 			if null_el: 
 				words.insert(i+1, null_el) #next word to process should be null_el
 				act_vals.insert(i+1, [])
@@ -147,9 +168,6 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 				removed_tag = supertags.pop()
 				removed_parse_state = parse_states.pop() 
 
-				if words[i] in null_words:
-					del words[i]
-					del act_vals[i]
 
 				# add inhibition to all rules along the way
 				
@@ -157,6 +175,15 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 				inhibition[key] = inhibition.get(key, [])
 				inhibition[key].append({'tag': removed_tag, 'time': curr_time})
 
+				# if len(supertags)> 0 and parse_states[-1] in actr_model.null_mapping: #if prev tag was 
+				if words[i] in null_words: #e.g., 'comp_del'
+					removed_null = words.pop(i)
+					inhibition[key].append({'tag': removed_null, 'time': curr_time}) #used in predict_null
+
+					del act_vals[i]
+				else: #add inhibition to the non-null choice
+					inhibition[key].append({'tag': 'not-null', 'time': curr_time}) #used in predict_null
+				i -= 1
 				# if len(inhibition[key]) < 7: #arbitrary
 				# 	inhibition[key].append(removed_tag)
  				# if removed_tag in null_els: #define null_els
@@ -176,7 +203,7 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 
 				# print('inhibition', inhibition)
 
-				i -= 1
+				
 			# key = (i-1,convert_to_rule(parse_states[-1]))
 			# inhibition[key] = inhibition.get(key, [])
 			# inhibition[key].append({'tag': removed_tag, 'time': curr_time})
@@ -218,27 +245,44 @@ def get_reanalyze_ind(actr_model, supertags, words):
 	Output: an index of one of the supertags. The sampling is weighted by the number of other tags that could have been chosen. 
 	"""
 	options = {}
-	for i in range(len(supertags)):
-		competitors = actr_model.lexical_chunks[words[i]]['syntax']
+	for i in range(len(supertags)): #for each supertag generated (i.e., words processed)
+		competitors = actr_model.lexical_chunks[words[i]]['syntax'] # number of alternative supertags
 		options[i] = len(competitors)
 
 	rand_ind = weighted_sample(options)
 	return(rand_ind)
 	# return(len(supertags)-1)
 
-def predict_null(word, tag, actr_model, print_prob =False):
+def predict_null(actr_model, word, curr_tag, curr_inhibition, curr_time, print_prob =False, use_priors=True):
 	## Look at base level activation of null things. 
 	## Compare to base level activation of all non-null things.
 	## Maybe I want a kind of bigram model as well? So for every word, count of the number of times other words came after?
-	eps = 0.0001
-	if tag in actr_model.null_mapping:
-		curr_act_dict = {tag:val for tag,val in actr_model.lexical_null_act[word].items()}
+
+	## currently I am not adding inhibition to the null... 
+
+	if curr_tag in actr_model.null_mapping:
+		if use_priors:
+			curr_act_dict = {tag:val for tag,val in actr_model.lexical_null_act[word].items()}
+		else: 
+			curr_act_dict = {tag:0 for tag in actr_model.lexical_null_act[word]}
+
+		# add in inhibition
+		for tag in curr_act_dict:
+			curr_act_dict[tag]-= actr_model.compute_inhibition(tag, curr_inhibition, curr_time)
 
 		# add in noise
 		for tag in curr_act_dict:  
 			curr_act_dict[tag] += np.random.normal(0, actr_model.noise_sd)
 
+		if print_prob:
+			print(word, curr_tag)
+			print(curr_inhibition)
+			print(curr_act_dict)
+			print(curr_time)
+
 		choice = max(curr_act_dict, key=lambda key:curr_act_dict[key])
+		if choice != 'not-null':
+			return choice
 		# print(curr_act_dict)
 
 
@@ -265,22 +309,23 @@ def predict_null(word, tag, actr_model, print_prob =False):
 		# choice = np.random.choice([null_token, tag])
 
 		# if choice != tag:
-		if choice != 'not-null':
-			return choice
+		#	return choice
+		
 
 
 	
 
-def generate_supertag(actr_model, goal_buffer, curr_word, inhibition, poss_tags, curr_time):
+def generate_supertag(actr_model, goal_buffer, curr_word, inhibition, poss_tags, curr_time, use_priors = True):
 	curr_act_dict = {tag:0 for tag in poss_tags}
 
-	# Add in base level activation
-	for tag in curr_act_dict:
-		curr_act_dict[tag] = actr_model.base_act[tag]
+	if use_priors:
+		# Add in base level activation
+		for tag in curr_act_dict:
+			curr_act_dict[tag] = actr_model.base_act[tag]
 
-    # Add in activation from the word
-	for tag in curr_act_dict:
-		curr_act_dict[tag] += actr_model.lexical_act[curr_word][tag]  
+	    # Add in activation from the word
+		for tag in curr_act_dict:
+			curr_act_dict[tag] += actr_model.lexical_act[curr_word][tag]  
 
 	
 	# Add in inhibition from the goal_buffer for things that did not work
@@ -292,7 +337,8 @@ def generate_supertag(actr_model, goal_buffer, curr_word, inhibition, poss_tags,
 
 		for tag in curr_act_dict:
 			tag_inhibition = actr_model.compute_inhibition(tag, curr_inhibition, curr_time)
-			curr_act_dict[tag] -= tag_inhibition*actr_model.max_activation
+			curr_act_dict[tag] -= tag_inhibition
+			# curr_act_dict[tag] -= tag_inhibition*actr_model.max_activation  #why was I multiplying??
 			# tag_freq = curr_inhibition.count(tag)
 			# curr_act_dict[tag] -= tag_freq*avg_inhibition
 
@@ -486,6 +532,19 @@ if __name__ == '__main__':
 	with open('./declmem/null_mapping.pkl', 'rb') as f:
 		null_mapping = pickle.load(f)
 
+
+	# tags = ['Det', 'Adj', 'NP_VoiceP', 'Vt_pass', 'Prep', 'Det', 'NP', 'aux', 'Adj', 'eos']
+	# # tags = []
+	# curr_parse = None 
+	# for tag in tags:
+	# 	tag_chunk = syntax_chunks_ep[tag]
+	# 	print(convert_to_rule(curr_parse), '+', convert_to_rule(tag_chunk))
+	# 	curr_parse = ccg.combine(curr_parse, tag_chunk, type_raising_rules)
+
+	
+	# 	print('end',convert_to_rule(curr_parse))
+	# 	print()
+
 	global_sd = 1
 
 	# Hyperparameters that do not change
@@ -494,6 +553,7 @@ if __name__ == '__main__':
 	latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4 from Lewis and Vasisth)
 	noise_sd = np.random.uniform(0.2,0.5)
 	latency_factor = np.random.beta(2,6)
+	max_iters = 1000
 
 	actr_model_wd = actr_model(decay,
 							  max_activation,
@@ -504,7 +564,7 @@ if __name__ == '__main__':
 							  lexical_chunks_wd,
 							  type_raising_rules,
 							  null_mapping,
-							  10000)
+							  max_iters)
 
 	actr_model_ep = actr_model(decay,
 							  max_activation,
@@ -515,23 +575,26 @@ if __name__ == '__main__':
 							  lexical_chunks_ep,
 							  type_raising_rules,
 							  null_mapping,
-							  10000)
+							  max_iters)
 
-	with open('test_sents_supertagger.txt') as f:
-	# with open('./data/train10000.txt') as f:
+	print(actr_model_wd.lexical_null_act['defendant'])
+
+	partial_states = [{'left': 'DP', 'right': 'PP', 'combinator': '/'}, {'left': 'TP', 'right': 'DP', 'combinator': '/'}, {'left': 'end', 'right': '', 'combinator': ''}]
+	# with open('test_sents_supertagger.txt') as f:
+	with open('./data/train10000.txt') as f:
 		for line in f:
 			print(line)
-			parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line)
+			parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=False)
 			while parse_states == None:
-				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line)
-			print('WD', supertags)
+				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=False)
+			# print('WD', supertags)
 			# print(parse_states)
 			# print(words)
-			parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line)
+			parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=False)
 			while parse_states == None:
-				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line)
-			print('EP', supertags)
-			print()
+				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=False)
+			# print('EP', supertags)
+			# print()
 
 
 

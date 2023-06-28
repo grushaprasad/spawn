@@ -77,21 +77,25 @@ decay = 0.5           # Standard value for ACT-R models
 max_activation = 1.5  # Standard value for ACT-R models
 latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4 from Lewis and Vasisth)
 
-max_iters = 5000  # Number of iterations before "giving up" and trying again
+max_iters = 1000  # Number of iterations before "giving up" and starting afresh. After half of these iterations parsing ignores priors
 
 
 
 #for num_sents in [100,1000,10000]:
 #for num_sents in [100,1000]:
-# for num_sents in [100,500]:
+
+for num_sents in [100,500]:
 # for num_sents in [100]:
-for num_sents in [10000]:
+# for num_sents in [10000]:
 	print('Num sents: ', num_sents)
+	failed_sents = []
 	sds = []
 	for i in range(num_parts):
-		# print(i)
-		random.seed(i)   #different seeds used for fitting the error terms than generating participants
-		np.random.seed(i)
+		seed = i
+		if i%200 == 0:
+			print(f'Processed {i} participants')
+		random.seed(seed)   #different seeds used for fitting the error terms than generating participants
+		np.random.seed(seed)
 
 		latency_factor = np.random.beta(2,6)  #prior  Englemann and Vasisth chapter. 
 		
@@ -117,8 +121,10 @@ for num_sents in [10000]:
 
 		curr_train_dat = curr_train_dat[:num_sents]
 
-		random.seed(i) #reset seeds right before training to be as close to WD as possible
-		np.random.seed(i)
+		
+
+		random.seed(seed) #reset seeds right before training to be as close to WD as possible
+		np.random.seed(seed)
 
 		## Train EP
 		actr_model_ep = actr_model(decay,
@@ -139,12 +145,16 @@ for num_sents in [10000]:
 		# # actr_model_ep.update_lexical_activation()
 
 		# print('Training EP')
-		# for ind,sent in enumerate(curr_train_dat):
-		# 	if ind%100 == 0:
-		# 		print(f'Trained {ind} sentences')
+		for ind,sent in enumerate(curr_train_dat):
+			# print(sent)
+			# if ind%100 == 0:
+			# 	print(f'Trained {ind} sentences')
 			actr_model_ep.update_counts([sent])
 			actr_model_ep.update_base_activation()
 			actr_model_ep.update_lexical_activation()
+
+		failed_sents.append(['EP', i, noise_sd, actr_model_ep.num_failed_sents])
+
 
 		ep_fname = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
 
@@ -152,8 +162,8 @@ for num_sents in [10000]:
 			pickle.dump(actr_model_ep, f)
 
 
-		random.seed(i)  #reset seeds to be as close to EP as possible
-		np.random.seed(i)
+		random.seed(seed)  #reset seeds to be as close to EP as possible
+		np.random.seed(seed)
 
 		actr_model_wd = actr_model(decay,
 							  max_activation,
@@ -169,16 +179,18 @@ for num_sents in [10000]:
 
 		# # Train WD
 
-		random.seed(i)  #reset seeds to be as close to EP as possible
-		np.random.seed(i)
+		random.seed(seed)  #reset seeds to be as close to EP as possible
+		np.random.seed(seed)
 		# print('Training WD')
-		# for ind,sent in enumerate(curr_train_dat):
-		# 	if ind%100 == 0:
-		# 		print(f'Trained {ind} sentences')
+		for ind,sent in enumerate(curr_train_dat):
+			# print(sent)
+			# if ind%100 == 0:
+			# 	print(f'Trained {ind} sentences')
 			actr_model_wd.update_counts([sent])
 			actr_model_wd.update_base_activation()
 			actr_model_wd.update_lexical_activation()
 
+		failed_sents.append(['WD', i, noise_sd, actr_model_wd.num_failed_sents])
 
 		wd_fname = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
 
@@ -216,15 +228,17 @@ for num_sents in [10000]:
 		# if i%5 == 0:
 		# 	print('Trained %s models'%str(i+1))
 
-	sd_fname = './trained_models/noisesds_train%sk_sd%s.csv'%(str(num_sents/1000), str(global_sd))
+	# sd_fname = './trained_models/noisesds_train%sk_sd%s.csv'%(str(num_sents/1000), str(global_sd))
+	failed_sent_fname = './trained_models/failed_sents_train%sk_sd%s.csv'%(str(num_sents/1000), str(global_sd))
 
-	with open(sd_fname, 'w') as f:
+	# with open(sd_fname, 'w') as f:
+	with open(failed_sent_fname, 'w') as f:
 		writer = csv.writer(f, delimiter = ',')
 
-		writer.writerow(['part', 'sd'])
+		writer.writerow(['model', 'seed', 'noise_sd', 'num_failed'])
 
-		for sd in sds:
-			writer.writerow(sd)
+		for item in failed_sents:
+			writer.writerow(item)
 
 
 
