@@ -5,7 +5,7 @@ import supertagger
 
 class actr_model:
 	# def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, type_raising_rules, null_mapping supertag_function):
-	def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, type_raising_rules, null_mapping, max_iters):
+	def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, type_raising_rules, null_mapping, max_iters, reanalysis_type):
 
 		eps = 0.000001
 
@@ -53,6 +53,8 @@ class actr_model:
 		self.max_iters = max_iters
 
 		self.eps = eps
+
+		self.reanalysis_type = reanalysis_type
 
 		#self.supertag_sentence = supertag_function
 
@@ -130,7 +132,7 @@ class actr_model:
 		for sent in sents:
 			# print(sent)
 			self.num_retries = 0 #set the number of retries for any sentence to be zero. 
-			final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent)
+			final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent, use_priors=True)
 			if final_state == None: #if model "gave up" after max tries
 				self.num_failed_sents +=1 #keep track of how many sentences its retried. 
 				self.failed_sents.append(sent)
@@ -138,7 +140,7 @@ class actr_model:
 
 			while final_state == None: # keep trying till a parse is found
 				self.num_retries +=1
-				final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent)
+				final_state, tags, words, act_vals = supertagger.supertag_sentence(self, sent, use_priors=False)
 
 			if self.num_retries!=0:
 				print('num retries', self.num_retries, sent)
