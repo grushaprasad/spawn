@@ -73,24 +73,32 @@ train_dat = [x.strip() for x in train_dat]
 # num_parts = 1
 num_parts = 1280
 # global_sd = 'uniform'
-global_sd = 1
+# global_sd = 1
 
 # Hyperparameters that do not change
 decay = 0.5           # Standard value for ACT-R models
 max_activation = 1.5  # Standard value for ACT-R models
 latency_exponent = 1  # Will always set this to 1 (because then it matches eqn 4 from Lewis and Vasisth)
 
-max_iters = 1000  # Number of iterations before "giving up" and starting afresh. After half of these iterations parsing ignores priors
+# max_iters = 1000
+max_iters = 2000  # Number of iterations before "giving up" and starting afresh. After half of these iterations parsing ignores priors
 
-# models = ['WD', 'WD2', 'EP']
-models = ['WD2']
+models = ['WD', 'WD2', 'EP']
+# models = ['WD2']
 
 #for num_sents in [100,1000,10000]:
 #for num_sents in [100,1000]:
+if __name__ == '__main__':
+	num_sents = int(input('Num training sents: ').strip())
+	global_sd = input('Global SD: ').strip()
+	reanalysis_type = input('Reanalysis type (start, uncertainty): ').strip()
 
-for num_sents in [100,500]:
-# for num_sents in [100]:
-# for num_sents in [10000]:
+	try:
+		global_sd = float(global_sd)
+	except:
+		print('Non numeric sd entered')
+		global_sd = global_sd
+
 	print('Num sents: ', num_sents)
 	failed_sents = []
 	sds = []
@@ -142,7 +150,8 @@ for num_sents in [100,500]:
 									  lexical_chunks_ep,
 									  type_raising_rules,
 									  null_mapping,
-									  max_iters)
+									  max_iters,
+									  reanalysis_type)
 
 			# print('Training EP')
 			for ind,sent in enumerate(curr_train_dat):
@@ -156,7 +165,7 @@ for num_sents in [100,500]:
 			failed_sents.append(['EP', i, noise_sd, actr_model_ep.num_failed_sents])
 
 
-			ep_fname = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+			ep_fname = './trained_models/%s_reanalysis/ep_train%sk_sd%s_part%s.pkl'%(reanalysis_type, str(num_sents/1000), str(global_sd), str(i))
 
 			with open(ep_fname, 'wb') as f:
 				pickle.dump(actr_model_ep, f)
@@ -174,7 +183,8 @@ for num_sents in [100,500]:
 								  lexical_chunks_wd,
 								  type_raising_rules,
 								  null_mapping,
-								  max_iters)
+								  max_iters,
+								  reanalysis_type)
 
 
 			# # Train WD
@@ -192,7 +202,7 @@ for num_sents in [100,500]:
 
 			failed_sents.append(['WD', i, noise_sd, actr_model_wd.num_failed_sents])
 
-			wd_fname = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+			wd_fname = './trained_models/%s_reanalysis/wd_train%sk_sd%s_part%s.pkl'%(reanalysis_type,str(num_sents/1000), str(global_sd), str(i))
 
 			with open(wd_fname, 'wb') as f:
 				pickle.dump(actr_model_wd, f)
@@ -212,7 +222,8 @@ for num_sents in [100,500]:
 								  lexical_chunks_wd2,
 								  type_raising_rules,
 								  null_mapping_wd2,
-								  max_iters)
+								  max_iters,
+								  reanalysis_type)
 
 
 			# # Train WD
@@ -230,7 +241,7 @@ for num_sents in [100,500]:
 
 			failed_sents.append(['WD', i, noise_sd, actr_model_wd2.num_failed_sents])
 
-			wd2_fname = './trained_models/wd2_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(global_sd), str(i))
+			wd2_fname = './trained_models/%s_reanalysis/wd2_train%sk_sd%s_part%s.pkl'%(reanalysis_type,str(num_sents/1000), str(global_sd), str(i))
 
 			with open(wd2_fname, 'wb') as f:
 				pickle.dump(actr_model_wd2, f)
@@ -259,22 +270,22 @@ for num_sents in [100,500]:
 
 
 
-# training_sents_ep, training_tags_ep = create_training_data(struc_probs, struc_sents_ep, struc_tags_ep, num_sents)
+	# training_sents_ep, training_tags_ep = create_training_data(struc_probs, struc_sents_ep, struc_tags_ep, num_sents)
 
-# training_sents_ep, training_tags_ep = shuffle_lists(training_sents_ep, training_tags_ep)
+	# training_sents_ep, training_tags_ep = shuffle_lists(training_sents_ep, training_tags_ep)
 
 
-# def create_training_data(probs, sents, tags, nsents):
-# 	all_sents = []
-# 	all_tags = []
-# 	for struc in probs:
-# 		n = round(probs[struc]*nsents)
-# 		curr_sents = [sents[struc]]*n
-# 		curr_tags = [tags[struc]]*n
-# 		all_sents.extend(curr_sents)
-# 		all_tags.extend(curr_tags)
+	# def create_training_data(probs, sents, tags, nsents):
+	# 	all_sents = []
+	# 	all_tags = []
+	# 	for struc in probs:
+	# 		n = round(probs[struc]*nsents)
+	# 		curr_sents = [sents[struc]]*n
+	# 		curr_tags = [tags[struc]]*n
+	# 		all_sents.extend(curr_sents)
+	# 		all_tags.extend(curr_tags)
 
-# 	return(all_sents, all_tags)
+	# 	return(all_sents, all_tags)
 
 
 # def shuffle_lists(l1, l2):
