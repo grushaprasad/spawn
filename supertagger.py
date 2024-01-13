@@ -7,11 +7,23 @@ import pickle
 import ccg
 
 
-def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'left': 'end', 'right': '', 'combinator': ''}]):
+"""
+To do: 
+
+- Change "give up" mechanism. Try for max iters once. If that doesn't work, then give up  on priors and keep trying for max iters till parse is reached. (Instead of right now where )
+
+- Maybe specify max iters in terms of time?? 
+
+
+
+"""
+
+def supertag_sentence(actr_model, sentence, use_priors = True, print_stages=False, end_states=[{'left': 'end', 'right': '', 'combinator': ''}]):
 	"""
 	Input:
 	  - actr_model (initialized with a specific grammar, activations etc)
 	  - sentence (string)
+	  - use_priors (Boolean): Should prior knowledge influence tag retrieval
 	  - print_stages (Boolean): should stages of parsing be printed
 	  - end_states (list): all possible valid end states
 
@@ -31,15 +43,14 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 	parse_states = [None] 
 	inhibition = {}
 	i = 0
-	max_iters = actr_model.max_iters # numnber of iterations before "giving up"
+	max_iters = actr_model.max_iters # number of iterations before "giving up"
 	num_iters = 0
 	curr_time = 0 #keep track of each retrieval
-	use_priors = True # should prior knowledge (base level and lexical activation)
-					  # influence tag retrieval for any word. 
+	# use_priors = True # 			  
 
 	while(i < len(words) and num_iters < max_iters):
-		if num_iters > (max_iters/2): #ignore priors if things are taking too long
-			use_priors = False
+		# if num_iters > (max_iters/2): #ignore priors if things are taking too long
+		# 	use_priors = False
 		num_iters +=1
 		if print_stages:
 			print()
@@ -64,7 +75,7 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 			curr_tag_chunk = actr_model.syntax_chunks[curr_tag]
 
 			# update variables
-			curr_time += actr_model.convert_to_rt([curr_act])  
+			curr_time += actr_model.convert_to_rt([curr_act])  ## should I add 50 ms for production rule firing? (see model.py)
 			act_vals[i].append(curr_act) 
 
 			# try to combine current tag with current parse state
@@ -103,7 +114,12 @@ def supertag_sentence(actr_model, sentence, print_stages=False, end_states=[{'le
 			i+=1 #go to next token
 		else: 
 			# decide which word to reanaluse
-			reanalyze_ind = get_reanalyze_ind(actr_model, supertags, words)
+			if actr_model.reanalysis_type == 'start': # always go back to beginning
+				reanalyze_ind = 0
+			elif actr_model.reanalysis_type == 'prev_word': # always go back one word
+				reanalyze_ind = i-1
+			else: # sample based on uncertainty
+				reanalyze_ind = get_reanalyze_ind(actr_model, supertags, words)
 			
 			# Remove predicted tags and parse states for re-analyzed words
 			num_to_pop = i - reanalyze_ind
@@ -276,10 +292,12 @@ if __name__ == '__main__':
 
 	fname = './data/train10000.txt'
 	# fname = 'test_sents_supertagger.txt'
-	# models = ['EP', 'WD', 'WD2']
-	models = ['WD2']
-	# print_tags = True
-	print_tags = False
+	models = ['EP', 'WD', 'WD2']
+	# models = ['WD2']
+	print_tags = True
+	# print_tags = False
+	# print_stages = True
+	print_stages = False
 
 	with open('./declmem/lexical_chunks_ep.pkl', 'rb') as f:
 		lexical_chunks_ep = pickle.load(f)
@@ -317,6 +335,7 @@ if __name__ == '__main__':
 	noise_sd = np.random.uniform(0.2,0.5)
 	latency_factor = np.random.beta(2,6)
 	max_iters = 1000
+	reanalysis_type = 'start'
 
 	actr_model_wd = actr_model(decay,
 							  max_activation,
@@ -327,7 +346,8 @@ if __name__ == '__main__':
 							  lexical_chunks_wd,
 							  type_raising_rules,
 							  null_mapping,
-							  max_iters)
+							  max_iters,
+							  reanalysis_type)
 
 	actr_model_wd2 = actr_model(decay,
 							  max_activation,
@@ -338,7 +358,8 @@ if __name__ == '__main__':
 							  lexical_chunks_wd2,
 							  type_raising_rules,
 							  null_mapping_wd2,
-							  max_iters)
+							  max_iters,
+							  reanalysis_type)
 
 	actr_model_ep = actr_model(decay,
 							  max_activation,
@@ -349,7 +370,8 @@ if __name__ == '__main__':
 							  lexical_chunks_ep,
 							  type_raising_rules,
 							  null_mapping,
-							  max_iters)
+							  max_iters,
+							  reanalysis_type)
 
 	# print(actr_model_wd.lexical_null_act['defendant'])
 
@@ -358,21 +380,21 @@ if __name__ == '__main__':
 		for line in f:
 			print(line)
 			if 'WD' in models:
-				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=False)
+				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=print_stages)
 				while parse_states == None:
-					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=False)
+					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=print_stages)
 				if print_tags: print('WD', supertags)
 
 			if 'WD2' in models:
-				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd2, line, end_states=partial_states, print_stages=False)
+				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd2, line, end_states=partial_states, print_stages=print_stages)
 				while parse_states == None:
-					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd2, line, end_states=partial_states, print_stages=False)
+					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd2, line, end_states=partial_states, print_stages=print_stages)
 				if print_tags: print('WD2', supertags)
 
 			if 'EP' in models:
-				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=False)
+				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=print_stages)
 				while parse_states == None:
-					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=False)
+					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=print_stages)
 				if print_tags: print('EP', supertags)
 			print()
 
