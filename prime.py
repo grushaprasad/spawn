@@ -14,13 +14,14 @@ import os
 from model import actr_model
 import pandas as pd
 import supertagger
+import train
 
 
 random.seed(7)
 np.random.seed(7)
 
-# sd = 'uniform'
-sd = 1
+#sd = 'uniform'
+# sd = 1
 num_parts = 1280
 sanity_check = False
 save_priming_preds = True
@@ -28,8 +29,7 @@ understand_progrrc = False
 understand_reanalysis = False 
 
 
-
-def generate_priming_preds(model_fname, stim_fname, part_id):
+def generate_priming_preds(model_fname, stim_fname, part_id, sd=None):
 	preds = []
 	with open(stim_fname, 'r') as sf:
 		stims = sf.readlines()
@@ -37,6 +37,42 @@ def generate_priming_preds(model_fname, stim_fname, part_id):
 	stims = [x.lower() for x in stims]
 	stims = [x.strip() for x in stims]
 
+	# if model_fname in ['ep', 'wd', 'wd2']: #load untrained model
+	# 	with open('./declmem/type_raising_rules.pkl', 'rb') as f:
+	# 		type_raising_rules = pickle.load(f)
+
+	# 	with open(f'./declmem/syntax_chunks_{model_fname}.pkl', 'rb') as f:
+	# 		syntax_chunks = pickle.load(f)
+
+	# 	with open(f'./declmem/lexical_chunks_{model_fname}.pkl', 'rb') as f:
+	# 		lexical_chunks= pickle.load(f)
+
+	# 	if model_fname == 'wd2':
+	# 		with open('./declmem/null_mapping_wd2.pkl', 'rb') as f:
+	# 			null_mapping = pickle.load(f)
+	# 	else:
+	# 		with open('./declmem/null_mapping.pkl', 'rb') as f:
+	# 			null_mapping =  pickle.load(f)
+
+	# 	decay = train.decay          # Standard value for ACT-R models
+	# 	max_activation = train.max_activation  # Standard value for ACT-R models
+	# 	latency_exponent = train.latency_exponent  # Will always set this to 1 (because then 
+	# 	latency_factor = np.random.beta(2,6)
+	# 	max_iters = train.max_iters
+
+
+	# 	model = actr_model(decay,
+	# 					  max_activation,
+	# 					  sd,
+	# 					  latency_factor,
+	# 				  	  latency_exponent,
+	# 					  syntax_chunks,
+	# 					  lexical_chunks,
+	# 					  type_raising_rules,
+	# 					  null_mapping,
+	# 					  max_iters)
+
+	# else:
 	with open(model_fname, 'rb') as mf:
 		model = pickle.load(mf)
 
@@ -50,17 +86,27 @@ def generate_priming_preds(model_fname, stim_fname, part_id):
 					          {'left': 'TP', 'right': 'DP', 'combinator': '/'}]
 
 			parse_states, tags, words, act_vals = supertagger.supertag_sentence(model, sent, end_states=partial_states)
+			num_retries = model.num_retries
 
-			final_state = parse_states[-1]
-			final_state_rule = final_state['left'] + final_state['combinator'] + final_state['right']
+			# while parse_states == None:
+			# 	final_state, tags, words, act_vals = supertagger.supertag_sentence(model, sent, end_states=partial_states, use_priors=False)
+			# 	num_retries += model.num_retries
+
+			
+			
 			if tags == None:
 				passive = 'NA'
-			elif tags[-1] == 'Vt_pass':
-				passive = 1
+				final_state = 'NA'
+				final_state_rule = 'NA'
 			else:
-				passive = 0
+				final_state = parse_states[-1]
+				final_state_rule = final_state['left'] + final_state['combinator'] + final_state['right']
+				if tags[-1] == 'Vt_pass':
+					passive = 1
+				else:
+					passive = 0
 
-			preds.append([stim_fname,part_id,sent_id,passive, final_state_rule])
+			preds.append([stim_fname,part_id,sent_id,passive, final_state_rule, num_retries])
 
 	return(preds)
 
@@ -209,13 +255,10 @@ def compute_reanalysis(model_fname, stim_fname, part_id, time=False):
 def save_preds(preds, fname):
 	with open(fname, 'w') as f:
 		writer = csv.writer(f, delimiter = ',')
-		writer.writerow(['list', 'part_id', 'sent_id', 'passive', 'goalstate'])
+		writer.writerow(['list', 'part_id', 'sent_id', 'passive', 'goalstate', 'num_retries'])
 
 		for pred in preds:
 			writer.writerow(pred)
-
-
-
 
 
 
@@ -289,7 +332,11 @@ def main():
 
 		with open('./declmem/null_mapping.pkl', 'rb') as f:
 			null_mapping = pickle.load(f)
-		max_iters = 10000
+
+		with open('./declmem/null_mapping_wd2.pkl', 'rb') as f:
+			null_mapping_wd2 = pickle.load(f)
+
+		max_iters = 1000
 
 		decay = 0.25          # Standard value for ACT-R models
 		max_activation = 1.5  # Standard value for ACT-R models
@@ -298,39 +345,48 @@ def main():
 		latency_factor = 0.1
 
 
-		actr_model_ep = actr_model(decay,
-								  max_activation,
-								  noise_sd,
-								  latency_factor,
-							  	  latency_exponent,
-								  syntax_chunks_ep,
-								  lexical_chunks_ep,
-								  type_raising_rules,
-								  null_mapping,
-								  max_iters)
+		# actr_model_ep = actr_model(decay,
+		# 						  max_activation,
+		# 						  noise_sd,
+		# 						  latency_factor,
+		# 					  	  latency_exponent,
+		# 						  syntax_chunks_ep,
+		# 						  lexical_chunks_ep,
+		# 						  type_raising_rules,
+		# 						  null_mapping,
+		# 						  max_iters)
 
-		# actr_model_wd2 =  actr_model(decay,
-		# 						max_activation,
-		# 						noise_sd,
-		# 						latency_factor,
-		# 						latency_exponent,
-		# 						syntax_chunks_wd2,
-		# 						lexical_chunks_wd2,
-		# 						type_raising_rules,
-		# 						supertagger.supertag_sentence2)
+		# actr_model_wd2 = actr_model(decay,
+		# 						  max_activation,
+		# 						  noise_sd,
+		# 						  latency_factor,
+		# 					  	  latency_exponent,
+		# 						  syntax_chunks_wd2,
+		# 						  lexical_chunks_wd2,
+		# 						  type_raising_rules,
+		# 						  null_mapping_wd2,
+		# 						  max_iters)
 
-		actr_model_wd = actr_model(decay,
-								  max_activation,
-								  noise_sd,
-								  latency_factor,
-							  	  latency_exponent,
-								  syntax_chunks_wd,
-								  lexical_chunks_wd,
-								  type_raising_rules,
-								  null_mapping,
-								  max_iters)
+		# actr_model_wd = actr_model(decay,
+		# 						  max_activation,
+		# 						  noise_sd,
+		# 						  latency_factor,
+		# 					  	  latency_exponent,
+		# 						  syntax_chunks_wd,
+		# 						  lexical_chunks_wd,
+		# 						  type_raising_rules,
+		# 						  null_mapping,
+		# 						  max_iters)
+		part = 584
+		train = 0.5
+		with open(f'./trained_models/ep_train{train}k_sd1.0_part{part}.pkl', 'rb') as mf:
+			actr_model_ep = pickle.load(mf)
 
+		with open(f'./trained_models/wd_train{train}k_sd1.0_part{part}.pkl', 'rb') as mf:
+			actr_model_wd = pickle.load(mf)
 
+		with open(f'./trained_models/wd2_train{train}k_sd1.0_part{part}.pkl', 'rb') as mf:
+			actr_model_wd2 = pickle.load(mf)
 		# for sent in sents:
 		# 	print(sent)
 		# 	# print('EP', actr_model_ep.supertag_sentence(actr_model_ep, sent)[1])
@@ -349,7 +405,14 @@ def main():
 			comp_types = model.lexical_chunks['comp_del']['syntax']
 			comp_act_dict = {key:model.base_act[key] for key in comp_types}
 
-			print('Before', comp_act_dict)
+			lexical_act = {key:model.lexical_act['comp_del'][key] for key in comp_types}
+
+			print('Before')
+			print('base act', comp_act_dict)
+			print('lexical_act', lexical_act)
+			if 'aux_del' in model.lexical_act:
+				lexical_act2 = {key:model.lexical_act['aux_del'][key] for key in ['aux', 'aux_pass', 'aux_prog']}
+				print('lexical_act2', lexical_act2)
 
 			model.update_counts([sent]*3)
 			model.update_base_activation()
@@ -358,7 +421,16 @@ def main():
 			comp_types = model.lexical_chunks['comp_del']['syntax']
 			comp_act_dict = {key:model.base_act[key] for key in comp_types}
 
-			print('After', comp_act_dict, '\n')
+			lexical_act = {key:model.lexical_act['comp_del'][key] for key in comp_types}
+
+
+
+			print('After')
+			print('base act', comp_act_dict)
+			print('lexical_act', lexical_act)
+			if 'aux_del' in model.lexical_act:
+				lexical_act2 = {key:model.lexical_act['aux_del'][key] for key in ['aux', 'aux_pass', 'aux_prog']}
+				print('lexical_act2', lexical_act2)
 		# print(actr_model_wd.base_act, '\n')
 		# print(actr_model_wd.base_count, '\n')
 		# print(actr_model_wd.base_instance, '\n')
@@ -368,70 +440,79 @@ def main():
 			# print(actr_model_ep.time)
 
 	if save_priming_preds:
-		for num_sents in [500]:
-			ep_preds = []
-			wd_preds = []
-			wd2_preds = []
-			print('---------------')
-			print(num_sents)
-			print(sd)
+	#for num_sents in [100, 500]:
+		num_sents = int(input('Num training sents: ').strip())
+		sd = input('Global SD: ').strip()
+		reanalysis_type = input('Reanalysis type (start, uncertainty): ').strip()
 
-			for i in range(num_parts):
-			#for i in range(0):
+		try:
+			sd = float(sd)
+		except:
+			print('Non numeric sd entered')
+			sd = sd
+		ep_preds = []
+		wd_preds = []
+		wd2_preds = []
+		print('---------------')
+		print(num_sents)
+		print(sd)
 
-				curr_stim_fname = stim_fnames[i%32]
+		for i in range(num_parts):
+		#for i in range(0):
 
-				# EP preds
-				random.seed(i)
-				np.random.seed(i)
+			curr_stim_fname = stim_fnames[i%32]
 
-				ep_model_name = './trained_models/ep_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+			# EP preds
+			random.seed(i)
+			np.random.seed(i)
 
-				# with open(ep_model_name, 'rb') as mf:
-				# 	model = pickle.load(mf)
+			# if num_sents == 0:
+			# 	ep_model_name = 'ep'
+			# else:
+			ep_model_name = './trained_models/%s_reanalysis/ep_train%sk_sd%s_part%s.pkl'%(reanalysis_type,str(num_sents/1000), str(sd), str(i))
 
-				# comp_types = model.lexical_chunks['comp_del']['syntax']
-				# for comp in comp_types:
-				# 	print(comp,  model.base_count[comp],model.base_instance[comp],model.base_act[comp])
-				# 	print(model.time, model.compute_baseact(comp))
-				# print('-----')
+			curr_ep_preds = generate_priming_preds(ep_model_name, curr_stim_fname, i, sd)
+			
+			ep_preds.extend(curr_ep_preds)
 
+			# WD preds
 
-				curr_ep_preds = generate_priming_preds(ep_model_name, curr_stim_fname, i)
-				ep_preds.extend(curr_ep_preds)
+			random.seed(i)
+			np.random.seed(i)
 
-				# WD preds
+			# if num_sents == 0:
+			# 	wd_model_name = 'wd'
+			# else:
+			wd_model_name = './trained_models/%s_reanalysis/wd_train%sk_sd%s_part%s.pkl'%(reanalysis_type,str(num_sents/1000), str(sd), str(i))
 
-				random.seed(i)
-				np.random.seed(i)
+			curr_wd_preds = generate_priming_preds(wd_model_name, curr_stim_fname, i, sd)
+			wd_preds.extend(curr_wd_preds)
 
-				wd_model_name = './trained_models/wd_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
+			# WD2 preds
+			random.seed(i)
+			np.random.seed(i)
 
-				curr_wd_preds = generate_priming_preds(wd_model_name, curr_stim_fname, i)
-				wd_preds.extend(curr_wd_preds)
+			# if num_sents == 0:
+			# 	wd2_model_name = 'wd2'
+			# else:
+			wd2_model_name = './trained_models/%s_reanalysis/wd2_train%sk_sd%s_part%s.pkl'%(reanalysis_type,str(num_sents/1000), str(sd), str(i))
 
-				# # WD2 preds
-				# random.seed(i)
-				# np.random.seed(i)
-
-				# wd2_model_name = './trained_models/wd2_train%sk_sd%s_part%s.pkl'%(str(num_sents/1000), str(sd), str(i))
-
-				# curr_wd2_preds = generate_priming_preds(wd2_model_name, curr_stim_fname, i)
-				# wd2_preds.extend(curr_wd2_preds)
-
-
-				if i%10 == 0:
-					print('Processed %s participants'%str(i+1))
+			curr_wd2_preds = generate_priming_preds(wd2_model_name, curr_stim_fname, i, sd)
+			wd2_preds.extend(curr_wd2_preds)
 
 
-			prime_fname_ep = './predictions/ep_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
-			prime_fname_wd = './predictions/wd_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
+			if i%10 == 0:
+				print('Processed %s participants'%str(i+1))
 
-			# prime_fname_wd2 = './predictions/wd2_train%sk_sd%s.csv'%(str(num_sents/1000), str(sd))
 
-			save_preds(ep_preds, prime_fname_ep)
-			save_preds(wd_preds, prime_fname_wd)
-			# save_preds(wd2_preds, prime_fname_wd2)
+		prime_fname_ep = './predictions/%s_reanalysis/ep_train%sk_sd%s.csv'%(reanalysis_type,str(num_sents/1000), str(sd))
+		prime_fname_wd = './predictions/%s_reanalysis/wd_train%sk_sd%s.csv'%(reanalysis_type, str(num_sents/1000), str(sd))
+
+		prime_fname_wd2 = './predictions/%s_reanalysis/wd2_train%sk_sd%s.csv'%(reanalysis_type, str(num_sents/1000), str(sd))
+
+		save_preds(ep_preds, prime_fname_ep)
+		save_preds(wd_preds, prime_fname_wd)
+		save_preds(wd2_preds, prime_fname_wd2)
 
 	if understand_progrrc:
 		for num_sents in [100]:
@@ -541,7 +622,6 @@ def main():
 			# pd.DataFrame(rrc_list).to_csv('rrc_time_retrieval.csv')
 			# pd.DataFrame(progrrc_list).to_csv('progrrc_time_retrieval.csv')
 			# pd.DataFrame(frc_list).to_csv('frc_time_retrieval.csv')
-
 
 
 main()
