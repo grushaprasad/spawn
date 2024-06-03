@@ -1,6 +1,7 @@
 import numpy as np 
 import create_declmem
 import os
+import random
 
 ## For now I will not worry about plausibility 
 
@@ -17,6 +18,10 @@ import os
 
 # All my RCs are going to modify the subject for now. 
 
+seed = 7
+
+random.seed(seed)
+np.random.seed(seed)
 
 num_sents = 10000
 
@@ -314,9 +319,10 @@ function_dict = {
 src_prob = (14182 + 15024 + 18229)/3000000
 orc_prob = (2943 +  1976 + 1802)/3000000
 orrc_prob = (5455 + 4746 + 3385)/3000000
-frc_prob = (3188 + 2867 + 1224)/3000000
-rrc_prob = (10730 + 10733 + 12788)/3000000
-prog_prob = (542 + 488 + 421)/3000000
+frc_prob = (3188 + 2867 + 1224)/3000000 # 0.0005
+rrc_prob = (10730 + 10733 + 12788)/3000000 # 0.01
+# prog_prob = (542 + 488 + 421)/3000000
+prog_prob = frc_prob*2 #based on the fact that frc didn't show up
 amv_prob = 1 - (src_prob + orc_prob + orrc_prob + frc_prob + rrc_prob + prog_prob)
 
 
@@ -326,8 +332,10 @@ prob_dict = {
 	'orrc': orrc_prob,
 	'frc': frc_prob,
 	'rrc': rrc_prob,
-	'progrrc': prog_prob/2,
-	'progrc': prog_prob/2,
+	# 'progrrc': prog_prob/2,
+	# 'progrc': prog_prob/2,
+	'progrrc': prog_prob*0.95, #based on relation between frc and rrc
+	'progrc': prog_prob*0.05,
 	'amv_trans': amv_prob/3,
 	'amv_intrans': amv_prob/4,
 	'amv_transloc': amv_prob/12,

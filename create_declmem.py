@@ -120,7 +120,7 @@ for d in DP:
 	lexical_chunks_wd2[d] = { 'syntax' : ['DP']}
 
 lexical_chunks_ep['who'] = {'syntax' : ['compsubj', 'compobj']}
-lexical_chunks_wd['who'] = {'syntax' : ['compsubj', 'compobj']}
+lexical_chunks_wd[] = {'syntax' : ['compsubj', 'compobj']}
 lexical_chunks_wd2['who'] = {'syntax' : ['compsubj', 'compobj']}
 
 # lexical_chunks_ep['comp_del'] = {'syntax' : ['compsubj', 'compobj']}
