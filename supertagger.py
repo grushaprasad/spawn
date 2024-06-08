@@ -151,6 +151,19 @@ def supertag_sentence(actr_model, sentence, use_priors = True, print_stages=Fals
 	else:
 		return(parse_states, supertags, words, act_vals)
 
+
+
+def get_entropy(d):
+	"""
+	Input: dictionary. Keys are categories, values are activation. 
+	Output: entropy of the dictionary (as measured using activation)
+	"""
+	probs = np.array(list(d.values()))/sum(d.values())
+	s = 0 
+	for prob in probs:
+		s += prob * math.log2(prob)
+	return -s
+
 def weighted_sample(d):
 	"""
 	Input: dictionary. Keys are categories, values are weights. 
@@ -159,7 +172,6 @@ def weighted_sample(d):
 	probs = np.array(list(d.values()))/sum(d.values())
 	pick = np.random.choice(list(d.keys()), p = probs)
 	return pick
-
 
 def get_reanalyze_ind(actr_model, supertags, words):
 	"""
@@ -172,12 +184,24 @@ def get_reanalyze_ind(actr_model, supertags, words):
 	options = {}
 	for i in range(len(supertags)): #for each supertag generated (i.e., words processed)
 		competitors = actr_model.lexical_chunks[words[i]]['syntax'] # number of alternative supertags
-		options[i] = len(competitors) ## TO DO: Make this real entropy
+
+		act_dict = {}
+
+		for comp in competitors:
+			act = actr_model.eps ## avoid zero activation
+			act += actr_model.base_act[comp] 
+			act += actr_model.lexical_act[words[i]][comp]
+			act_dict[comp] = act
+
+		entropy = get_entropy(act_dict)
+		options[i] = entropy
+		
+		# options[i] = len(competitors) ## TO DO: Make this real entropy
 
 	rand_ind = weighted_sample(options) 
 	return(rand_ind)
 
-def predict_null(actr_model, word, curr_tag, curr_inhibition, curr_time, print_prob =False, use_priors=True):
+def predict_null(actr_model, word, curr_tag, curr_inhibition, curr_time, print_prob=False, use_priors=True):
 	"""
 	Input:
 	  word (string): word being processed
@@ -290,12 +314,12 @@ def print_states(tr_rules, tag_list, word_list):
 if __name__ == '__main__':
 	from model import actr_model
 
-	fname = './data/train10000.txt'
-	# fname = 'test_sents_supertagger.txt'
+	# fname = './data/train10000.txt'
+	fname = 'test_sents_supertagger.txt'
 	models = ['EP', 'WD', 'WD2']
 	# models = ['WD2']
-	print_tags = True
-	# print_tags = False
+	# print_tags = True
+	print_tags = False
 	# print_stages = True
 	print_stages = False
 
@@ -335,7 +359,7 @@ if __name__ == '__main__':
 	noise_sd = np.random.uniform(0.2,0.5)
 	latency_factor = np.random.beta(2,6)
 	max_iters = 1000
-	reanalysis_type = 'start'
+	reanalysis_type = 'uncertainty'
 
 	actr_model_wd = actr_model(decay,
 							  max_activation,
