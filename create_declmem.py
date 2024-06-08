@@ -120,7 +120,7 @@ for d in DP:
 	lexical_chunks_wd2[d] = { 'syntax' : ['DP']}
 
 lexical_chunks_ep['who'] = {'syntax' : ['compsubj', 'compobj']}
-lexical_chunks_wd[] = {'syntax' : ['compsubj', 'compobj']}
+lexical_chunks_wd['who'] = {'syntax' : ['compsubj', 'compobj']}
 lexical_chunks_wd2['who'] = {'syntax' : ['compsubj', 'compobj']}
 
 # lexical_chunks_ep['comp_del'] = {'syntax' : ['compsubj', 'compobj']}
@@ -149,9 +149,9 @@ lexical_chunks_wd2['aux_del'] = {'syntax' : ['aux', 'aux_pass', 'aux_prog']}
 
 
 
-lexical_chunks_ep['being'] = {'syntax' : ['ProgP']}
-lexical_chunks_wd['being'] = {'syntax' : ['ProgP']}
-lexical_chunks_wd2['being'] = {'syntax' : ['ProgP']}
+lexical_chunks_ep['being'] = {'syntax' : ['Prog']}
+lexical_chunks_wd['being'] = {'syntax' : ['Prog']}
+lexical_chunks_wd2['being'] = {'syntax' : ['Prog']}
 
 lexical_chunks_ep['and'] = {'syntax' : ['conj']}
 lexical_chunks_wd['and'] = {'syntax' : ['conj']}
@@ -249,10 +249,10 @@ common_syntax_chunks = {
 		'combinator': '/'
 	},
 
-	'ProgP' : {
+	'Prog' : {
 		'left': 'ProgP',
-		'right': '',
-		'combinator': ''
+		'right': 'VoiceP',
+		'combinator': '/'
 	},
 
 	'aux': {
@@ -269,7 +269,7 @@ common_syntax_chunks = {
 
 	'aux_prog': {
 		'left': '(TP\\DP)',
-		'right': '(VoiceP/ProgP)',
+		'right': 'ProgP',
 		'combinator': '/'
 	},
 
@@ -328,7 +328,7 @@ syntax_chunks_ep['NP_VoiceP'] = {
 
 syntax_chunks_ep['NP_ProgP'] = {
 								'left': 'NP',
-								'right': '(VoiceP/ProgP)',
+								'right': 'ProgP',
 								'combinator': '/'
 								}
 
@@ -374,7 +374,7 @@ syntax_chunks_wd['comppass_null'] = {
 
 syntax_chunks_wd['compprog_null'] = {
 								'left': 'CP',
-								'right': '(VoiceP/ProgP)',
+								'right': 'ProgP',
 								'combinator': '/'
 								}
 
