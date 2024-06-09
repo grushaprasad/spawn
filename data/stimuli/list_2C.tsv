@@ -1,0 +1,97 @@
+sent_type	struc	prime_type	verb	verb_num	sent_id	sentence	question	response
+prime	prog_rrc	NA	recorded	2	recorded2	The management being recorded by the employee talked-about privacy .
+prime	prog_rrc	NA	recorded	3	recorded3	The dancer being recorded by his trainer practiced energetically .
+prime	prog_rrc	NA	recorded	4	recorded4	The influencer being recorded by her fans started-trending rapidly .
+target	rrc	prog_rrc	recorded	1	recorded1	The priest recorded
+prime	amv	NA	loved	2	loved2	The comedian loved the audience and impersonated a famous celebrity .
+prime	amv	NA	loved	3	loved3	The kid loved her parents and slept peacefully .
+prime	amv	NA	loved	4	loved4	The janitor loved the employees and was cheerful .
+target	rrc	amv	loved	1	loved1	The landlord loved
+prime	amv	NA	described	2	described2	The secretary described the visitor and waited patiently .
+prime	amv	NA	described	3	described3	The chemist described the writer and was interested .
+prime	amv	NA	described	4	described4	The physicist described the journalist and published many seminal articles .
+target	rrc	amv	described	1	described1	The boy described
+prime	urc	NA	examined	2	examined2	The engineer who was examined by a licensor passed the test .
+prime	urc	NA	examined	3	examined3	The industrialist who was examined by the auditor hid the money .
+prime	urc	NA	examined	4	examined4	The patient who was examined by the hygenist looked uncomfortable .
+target	rrc	urc	examined	1	examined1	The defendant examined
+prime	amv	NA	envied	2	envied2	The principal envied the administration and complained incessantly .
+prime	amv	NA	envied	3	envied3	The man envied his sister and bought a new car .
+prime	amv	NA	envied	4	envied4	The plumber envied the carpenter and was well-known .
+target	rrc	amv	envied	1	envied1	The officer envied
+prime	amv	NA	captured	2	captured2	The witch captured the peasant and cackled gleefully .
+prime	amv	NA	captured	3	captured3	The suspect captured the investigator and looked terrified .
+prime	amv	NA	captured	4	captured4	The prisoners captured the colonel and escaped at-night .
+target	rrc	amv	captured	1	captured1	The policeman captured
+prime	amv	NA	scratched	2	scratched2	The toddler scratched the table and exclaimed in-surprise .
+prime	amv	NA	scratched	3	scratched3	The dog scratched a stranger and barked loudly .
+prime	amv	NA	scratched	4	scratched4	The diamond scratched the machine and remained flawless .
+target	rrc	amv	scratched	1	scratched1	The girl scratched
+prime	prog_rrc	NA	consoled	2	consoled2	The teenager being consoled by the friend went to her home sullenly .
+prime	prog_rrc	NA	consoled	3	consoled3	The woman being consoled by her daughter smiled wistfully .
+prime	prog_rrc	NA	consoled	4	consoled4	The athlete being consoled by his coach promised more effort .
+target	rrc	prog_rrc	consoled	1	consoled1	The widow consoled
+prime	urc	NA	attacked	2	attacked2	The lion who was attacked by the hunter staggered into the forest .
+prime	urc	NA	attacked	3	attacked3	The senator who was attacked by the assassin went to the hospital .
+prime	urc	NA	attacked	4	attacked4	The analyst who was attacked by his client apologized .
+target	rrc	urc	attacked	1	attacked1	The troops attacked
+prime	rrc	NA	paid	2	paid2	The organization paid by the government expanded its mission .
+prime	rrc	NA	paid	3	paid3	The broker paid by the company signed the contract .
+prime	rrc	NA	paid	4	paid4	The entrepreneur paid by the industrialist founded a successful company .
+target	rrc	rrc	paid	1	paid1	The cashier paid
+prime	prog_rrc	NA	accompanied	2	accompanied2	The children being accompanied by their guardian skipped to the park .
+prime	prog_rrc	NA	accompanied	3	accompanied3	The toddler being accompanied by her parents went to the store .
+prime	prog_rrc	NA	accompanied	4	accompanied4	The builder being accompanied by the architect visited the construction-site .
+target	rrc	prog_rrc	accompanied	1	accompanied1	The prince accompanied
+prime	urc	NA	recognized	2	recognized2	The actor who was recognized by the reporter waved enthusiastically .
+prime	urc	NA	recognized	3	recognized3	The poet who was recognized by the writer smiled .
+prime	urc	NA	recognized	4	recognized4	The driver who was recognized by the passenger grinned cheerfully .
+target	rrc	urc	recognized	1	recognized1	The man recognized
+prime	rrc	NA	chased	2	chased2	The monkey chased by a hatter stole his hats .
+prime	rrc	NA	chased	3	chased3	The thief chased by the officer stopped suddenly .
+prime	rrc	NA	chased	4	chased4	The dentist chased by her son threatened his teeth-extraction playfully .
+target	rrc	rrc	chased	1	chased1	The dog chased
+prime	prog_rrc	NA	studied	2	studied2	The writer being studied by the scholar wrote a radical book .
+prime	prog_rrc	NA	studied	3	studied3	The apprentice being studied by the blacksmith forged a shield .
+prime	prog_rrc	NA	studied	4	studied4	The scholars being studied by the psychologist were attentive .
+target	rrc	prog_rrc	studied	1	studied1	The soldier studied
+prime	prog_rrc	NA	betrayed	2	betrayed2	The king being betrayed by the genie arrested the innocent woman .
+prime	prog_rrc	NA	betrayed	3	betrayed3	The businessman being betrayed by his partner lost a-lot-of money .
+prime	prog_rrc	NA	betrayed	4	betrayed4	The executive being betrayed by her accountant committed the famous tax-fraud .
+target	rrc	prog_rrc	betrayed	1	betrayed1	The politician betrayed
+prime	urc	NA	challenged	2	challenged2	The scientist who was challenged by the journalist demonstrated the invention .
+prime	urc	NA	challenged	3	challenged3	The dragon who was challenged by the wizard roared loudly .
+prime	urc	NA	challenged	4	challenged4	The programmer who was challenged by the supervisor accepted her mistake .
+target	rrc	urc	challenged	1	challenged1	The protestors challenged
+prime	rrc	NA	selected	2	selected2	The professor selected by the university made plans-to-move .
+prime	rrc	NA	selected	3	selected3	The chef selected by the restaurant advertised his signature dish .
+prime	rrc	NA	selected	4	selected4	The developer selected by the team solved the problem efficiently .
+target	rrc	rrc	selected	1	selected1	The applicant selected
+prime	urc	NA	congratulated	2	congratulated2	The actress who was congratulated by the director talked to the media happily .
+prime	urc	NA	congratulated	3	congratulated3	The governor who was congratulated by the president made a public-statement .
+prime	urc	NA	congratulated	4	congratulated4	The valedictorian who was congratulated by her family beamed joyfully .
+target	rrc	urc	congratulated	1	congratulated1	The captain congratulated
+prime	rrc	NA	encouraged	2	encouraged2	The musician encouraged by the crowd performed a breathtaking piece .
+prime	rrc	NA	encouraged	3	encouraged3	The teacher encouraged by her students brought some donuts .
+prime	rrc	NA	encouraged	4	encouraged4	The hairdresser encouraged by her customer tried a new hairstyle .
+target	rrc	rrc	encouraged	1	encouraged1	The gymnast encouraged
+prime	prog_rrc	NA	identified	2	identified2	The warden being identified by the prisoner cracked the walnuts enthusiastically .
+prime	prog_rrc	NA	identified	3	identified3	The student being identified by the researcher proposed an interesting project .
+prime	prog_rrc	NA	identified	4	identified4	The electrician being identified by the company was competent .
+target	rrc	prog_rrc	identified	1	identified1	The thief identified
+prime	amv	NA	admired	2	admired2	The princess admired the magician and went into a trance .
+prime	amv	NA	admired	3	admired3	The employee admired the manager and received a good evaluation .
+prime	amv	NA	admired	4	admired4	The nurse admired the doctor and worked diligently .
+target	rrc	amv	admired	1	admired1	The singer admired
+prime	rrc	NA	approached	2	approached2	The clerk approached by his manager submitted the report .
+prime	rrc	NA	approached	3	approached3	The spy approached by the agent searched-for some answers .
+prime	rrc	NA	approached	4	approached4	The pharmacist approached by the patient recommended the blue pills .
+target	rrc	rrc	approached	1	approached1	The student approached
+prime	rrc	NA	introduced	2	introduced2	The producer introduced by the association won many awards .
+prime	rrc	NA	introduced	3	introduced3	The elf introduced by the magician danced happily .
+prime	rrc	NA	introduced	4	introduced4	The therapist introduced by the doctor listened carefully .
+target	rrc	rrc	introduced	1	introduced1	The speaker introduced
+prime	urc	NA	sketched	2	sketched2	The apprentice who was sketched by the artist rolled-up the canvas .
+prime	urc	NA	sketched	3	sketched3	The painter who was sketched by her student looked happy .
+prime	urc	NA	sketched	4	sketched4	The robot who was sketched by the illustrator gained popularity rapidly .
+target	rrc	urc	sketched	1	sketched1	The culprit sketched
