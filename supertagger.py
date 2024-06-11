@@ -153,22 +153,25 @@ def supertag_sentence(actr_model, sentence, use_priors = True, print_stages=Fals
 
 
 
-def get_entropy(d):
+def get_entropy(d, temp):
 	"""
-	Input: dictionary. Keys are categories, values are activation. 
+	Input: 
+		- d: dictionary. Keys are categories, values are activation. 
+		- temp: float. temperature for softmax
 	Output: entropy of the dictionary (as measured using activation)
 	"""
-	probs = np.array(list(d.values()))/sum(d.values())
-	s = 0 
-	for prob in probs:
-		s += prob * math.log2(prob)
-	return -s
+	vals = np.array(d.values())
+	probs = np.exp(vals/temp)/sum(np.exp(vals/temp))
+	ent = -np.sum(probs*np.log(probs))
+
+	return ent
 
 def weighted_sample(d):
 	"""
 	Input: dictionary. Keys are categories, values are weights. 
 	Output: a key sampled by the weight
 	"""
+	
 	probs = np.array(list(d.values()))/sum(d.values())
 	pick = np.random.choice(list(d.keys()), p = probs)
 	return pick
@@ -193,7 +196,7 @@ def get_reanalyze_ind(actr_model, supertags, words):
 			act += actr_model.lexical_act[words[i]][comp]
 			act_dict[comp] = act
 
-		entropy = get_entropy(act_dict)
+		entropy = get_entropy(act_dict, actr_model.temperature)
 		options[i] = entropy
 		
 		# options[i] = len(competitors) ## TO DO: Make this real entropy
