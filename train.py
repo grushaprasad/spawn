@@ -74,7 +74,7 @@ parser.add_argument('--traindir', type=str, default='../trained_models/',
 
 ## Model hyperparameters
 parser.add_argument('--reanalysis', type=str, default='uncertainty',
-                choices=['start', 'uncertainty'],
+                choices=['start', 'uncertainty1', 'uncertainty10'],
                 help='type of reanalysis mechanism')
 
 parser.add_argument('--global_sd_dist', type=str, default='normal',
@@ -110,6 +110,10 @@ np.random.seed(args.seed)
 if not os.path.isdir(args.traindir):
 	os.makedirs(args.traindir)
 
+if args.reanalysis == 'uncertainty10':
+	temperature = 10
+else:
+	temperature = 1 # temp doesn't matter for start reanalysis
 
 # num_sents = int(input('Num training sents: ').strip())
 # global_sd = input('Global SD: ').strip()
@@ -121,7 +125,7 @@ for i in range(args.num_parts):
 	if i%200 == 0:
 		print(f'Processed {i-1} participants')
 
-	fname = f'train{args.num_train/1000}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
+	fname = f'train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
 
 	#set seed
 	seed = i
@@ -158,7 +162,8 @@ for i in range(args.num_parts):
 								  type_raising_rules,
 								  null_mapping,
 								  args.giveup,
-								  args.reanalysis)
+								  args.reanalysis,
+								  temperature)
 
 		# print('Training EP')
 		for ind,sent in enumerate(curr_train_dat):
@@ -190,7 +195,8 @@ for i in range(args.num_parts):
 							  type_raising_rules,
 							  null_mapping,
 							  args.giveup,
-							  args.reanalysis)
+							  args.reanalysis,
+							  temperature)
 
 		for ind,sent in enumerate(curr_train_dat):
 			# print(sent)
@@ -223,7 +229,8 @@ for i in range(args.num_parts):
 							  type_raising_rules,
 							  null_mapping_wd2,
 							  args.giveup,
-							  args.reanalysis)
+							  args.reanalysis,
+							  temperature)
 
 		for ind,sent in enumerate(curr_train_dat):
 			# print(sent)
@@ -241,7 +248,7 @@ for i in range(args.num_parts):
 			pickle.dump(actr_model_wd2, f)
 
 
-failed_sent_fname = f'../trained_models/failed_sents_train{args.num_train/1000}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'
+failed_sent_fname = f'../trained_models/failed_sents_train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'
 
 # with open(sd_fname, 'w') as f:
 with open(failed_sent_fname, 'w') as f:

@@ -70,7 +70,7 @@ def save_preds(preds, fname):
 
 
 
-parser = argparse.ArgumentParser(description='SPAWN Trainer')
+parser = argparse.ArgumentParser(description='SPAWN Prime')
 
 ## Directory
 parser.add_argument('--traindir', type=str, default='../trained_models/',
@@ -81,7 +81,7 @@ parser.add_argument('--preddir', type=str, default='../predictions/',
 
 ## Model hyperparameters
 parser.add_argument('--reanalysis', type=str, default='uncertainty',
-                choices=['start', 'uncertainty'],
+                choices=['start', 'uncertainty1', 'uncertainty10'],
                 help='type of reanalysis mechanism')
 
 parser.add_argument('--global_sd_dist', type=str, default='normal',
@@ -136,7 +136,7 @@ for i in range(args.num_parts):
 		random.seed(i)
 		np.random.seed(i)
 
-		fname =  f'{args.traindir}{model}_train{args.num_train/1000}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
+		fname = f'train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
 
 		curr_preds = generate_priming_preds(fname, curr_stim_fname, i)
 
@@ -147,7 +147,7 @@ for i in range(args.num_parts):
 		print('Processed %s participants'%str(i+1))
 
 for model in preds:
-	fname = f'{args.preddir}{model}_train{args.num_train/1000}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.csv'
+	fname = f'{args.preddir}{model}_train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'
 
 	save_preds(preds[model], fname)
 
