@@ -5,7 +5,7 @@ import supertagger
 
 class actr_model:
 	# def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, type_raising_rules, null_mapping supertag_function):
-	def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, type_raising_rules, null_mapping, max_iters, reanalysis_type):
+	def __init__(self,decay, max_activation, noise_sd, latency_factor, latency_exponent, syntax_chunks, lexical_chunks, type_raising_rules, null_mapping, max_iters, reanalysis_type, temperature):
 
 		eps = 0.000001
 
@@ -55,6 +55,8 @@ class actr_model:
 		self.eps = eps
 
 		self.reanalysis_type = reanalysis_type
+
+		self.temperature = temperature
 
 		#self.supertag_sentence = supertag_function
 
