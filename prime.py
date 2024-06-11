@@ -120,6 +120,10 @@ np.random.seed(args.seed)
 if not os.path.isdir(args.preddir):
 	os.makedirs(args.preddir)
 
+def append_to_log(file_path, text):
+    with open(file_path, 'a') as file:
+        file.write(text + '\n')
+
 with open(args.progress_fname, 'w') as file:
     file.write('Starting\n')
 
@@ -142,7 +146,7 @@ for i in range(args.num_parts):
 		random.seed(i)
 		np.random.seed(i)
 
-		fname = f'train{args.num_train/1000}_{args.reanalysis}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
+		fname = f'{args.traindir}{model}_train{args.num_train/1000}_{args.reanalysis}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
 
 		curr_preds = generate_priming_preds(fname, curr_stim_fname, i)
 
