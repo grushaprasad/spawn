@@ -139,7 +139,7 @@ for i in range(args.num_parts):
 		random.seed(i)
 		np.random.seed(i)
 
-		fname = f'train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
+		fname = f'train{args.num_train/1000}_{args.reanalysis}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
 
 		curr_preds = generate_priming_preds(fname, curr_stim_fname, i)
 
@@ -151,7 +151,7 @@ for i in range(args.num_parts):
 		append_to_log(text, args.progress_fname)
 
 for model in preds:
-	fname = f'{args.preddir}{model}_train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'
+	fname = f'{args.preddir}{model}_train{args.num_train/1000}_{args.reanalysis}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'
 
 	save_preds(preds[model], fname)
 
