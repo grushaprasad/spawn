@@ -255,7 +255,7 @@ for i in range(args.num_parts):
 
 	if i%100 == 0:
 		text = f'Processed {i+1} participants'
-		append_to_log(text, args.progress_fname)
+		append_to_log(args.progress_fname, text)
 
 
 failed_sent_fname = f'../trained_models/failed_sents_train{args.num_train/1000}_{args.reanalysis}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'

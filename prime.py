@@ -155,7 +155,7 @@ for i in range(args.num_parts):
 
 	if i%10 == 0:
 		text = f'Processed {i+1} participants'
-		append_to_log(text, args.progress_fname)
+		append_to_log(args.progress_fname, text)
 
 for model in preds:
 	fname = f'{args.preddir}{model}_train{args.num_train/1000}_{args.reanalysis}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'
