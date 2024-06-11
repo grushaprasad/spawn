@@ -120,6 +120,9 @@ np.random.seed(args.seed)
 if not os.path.isdir(args.preddir):
 	os.makedirs(args.preddir)
 
+with open(args.progress_fname, 'w') as file:
+    file.write('Starting\n')
+
 stim_fnames = []
 
 

@@ -120,6 +120,8 @@ def append_to_log(file_path, text):
     with open(file_path, 'a') as file:
         file.write(text + '\n')
 
+with open(args.progress_fname, 'w') as file:
+        file.write('Starting\n')
 
 # num_sents = int(input('Num training sents: ').strip())
 # global_sd = input('Global SD: ').strip()
@@ -129,6 +131,7 @@ failed_sents = []
 sds = []
 for i in range(args.num_parts):
 	fname = f'train{args.num_train/1000}_{args.reanalysis}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
+	print(fname)
 
 	#set seed
 	seed = i
