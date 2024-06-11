@@ -79,6 +79,9 @@ parser.add_argument('--traindir', type=str, default='../trained_models/',
 parser.add_argument('--preddir', type=str, default='../predictions/',
                 help='path to save predictions')
 
+parser.add_argument('--progress_fname', type=str, 
+                help='fname+path to save progress')
+
 ## Model hyperparameters
 parser.add_argument('--reanalysis', type=str, default='uncertainty',
                 choices=['start', 'uncertainty1', 'uncertainty10'],
@@ -144,7 +147,8 @@ for i in range(args.num_parts):
 
 
 	if i%10 == 0:
-		print('Processed %s participants'%str(i+1))
+		text = f'Processed {i+1} participants'
+		append_to_log(text, args.progress_fname)
 
 for model in preds:
 	fname = f'{args.preddir}{model}_train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'

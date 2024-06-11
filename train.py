@@ -51,8 +51,6 @@ with open(train_fname,'r') as f:
 	train_dat = f.readlines()
 
 
-
-
 train_dat = [x.strip() for x in train_dat]
 
 
@@ -71,6 +69,9 @@ parser = argparse.ArgumentParser(description='SPAWN Trainer')
 ## Directory parameter
 parser.add_argument('--traindir', type=str, default='../trained_models/',
                 help='path to save models')
+
+parser.add_argument('--progress_fname', type=str, 
+                help='fname+path to save progress')
 
 ## Model hyperparameters
 parser.add_argument('--reanalysis', type=str, default='uncertainty',
@@ -115,6 +116,11 @@ if args.reanalysis == 'uncertainty10':
 else:
 	temperature = 1 # temp doesn't matter for start reanalysis
 
+def append_to_log(file_path, text):
+    with open(file_path, 'a') as file:
+        file.write(text + '\n')
+
+
 # num_sents = int(input('Num training sents: ').strip())
 # global_sd = input('Global SD: ').strip()
 # reanalysis_type = input('Reanalysis type (start, uncertainty): ').strip()
@@ -122,9 +128,6 @@ else:
 failed_sents = []
 sds = []
 for i in range(args.num_parts):
-	if i%200 == 0:
-		print(f'Processed {i-1} participants')
-
 	fname = f'train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}_m{i}.pkl'
 
 	#set seed
@@ -246,6 +249,10 @@ for i in range(args.num_parts):
 
 		with open(wd2_fname, 'wb') as f:
 			pickle.dump(actr_model_wd2, f)
+
+	if i%100 == 0:
+		text = f'Processed {i+1} participants'
+		append_to_log(text, args.progress_fname)
 
 
 failed_sent_fname = f'../trained_models/failed_sents_train{args.num_train/1000}_{args.reanalysis_type}_sd{args.global_sd_dist}-{args.global_sd_param1}-{args.global_sd_param2}_giveup{args.giveup}.csv'
