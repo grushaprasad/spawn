@@ -160,7 +160,7 @@ def get_entropy(d, temp):
 		- temp: float. temperature for softmax
 	Output: entropy of the dictionary (as measured using activation)
 	"""
-	vals = np.array(d.values())
+	vals = np.array(list(d.values()))
 	probs = np.exp(vals/temp)/sum(np.exp(vals/temp))
 	ent = -np.sum(probs*np.log(probs))
 
