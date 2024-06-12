@@ -1,0 +1,39 @@
+---
+title: "SPAWN CoNLL plots"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+
+setwd('/home/gprasad/SPAWN/spawn/')
+outdir='/datalake/CLaP/SPAWN/CoNLL2024/preprocessed/'
+
+
+```
+
+## Plots from raw proportions
+
+```{r}
+
+## Load data
+raw_combined_summ <- read.csv(paste0(outdir,'raw_combined_summ.csv'))
+
+```
+
+```{r}
+
+ggplot(raw_combined_summ %>%
+         filter(giveup=='giveup100',
+                sd == 'sduniform-0.2-0.5'),
+       aes(y=prop_passive, x=train, color=prime_type)) +
+  geom_point() + 
+  facet_grid(model~reanalysis)
+
+```
+
+
+## Plots from Bayesian Posterior samples
+
