@@ -107,6 +107,8 @@ for(r in reanalysis){
 
 all_combined_summ <- dplyr::bind_rows(combined_summ_list)
 write.csv(all_combined_summ, paste0(outdir, 'raw_combined_summ', '.csv'))
+write.csv(all_combined_summ, './analysis/raw_combined_summ.csv')
+
 
 
 
