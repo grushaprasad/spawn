@@ -94,7 +94,7 @@ def supertag_sentence(actr_model, sentence, use_priors = True, print_stages=Fals
 				poss_tags.remove(curr_tag) #discard current tag
 
 		# For the last word check if combined state is a valid end state
-		if i == len(words)-1 and combined not in end_states:
+		if i == len(words)-1 and len(end_states) > 0 and combined not in end_states:
 			found_valid_tag = False
 
 		if found_valid_tag:
@@ -321,10 +321,10 @@ if __name__ == '__main__':
 	fname = 'test_sents_supertagger.txt'
 	models = ['EP', 'WD', 'WD2']
 	# models = ['WD2']
-	# print_tags = True
-	print_tags = False
-	# print_stages = True
-	print_stages = False
+	print_tags = True
+	# print_tags = False
+	print_stages = True
+	# print_stages = False
 
 	with open('./declmem/lexical_chunks_ep.pkl', 'rb') as f:
 		lexical_chunks_ep = pickle.load(f)
@@ -362,7 +362,8 @@ if __name__ == '__main__':
 	noise_sd = np.random.uniform(0.2,0.5)
 	latency_factor = np.random.beta(2,6)
 	max_iters = 1000
-	reanalysis_type = 'uncertainty'
+	reanalysis_type = 'start'
+	temperature = 0
 
 	actr_model_wd = actr_model(decay,
 							  max_activation,
@@ -374,7 +375,8 @@ if __name__ == '__main__':
 							  type_raising_rules,
 							  null_mapping,
 							  max_iters,
-							  reanalysis_type)
+							  reanalysis_type,
+							  temperature)
 
 	actr_model_wd2 = actr_model(decay,
 							  max_activation,
@@ -386,7 +388,8 @@ if __name__ == '__main__':
 							  type_raising_rules,
 							  null_mapping_wd2,
 							  max_iters,
-							  reanalysis_type)
+							  reanalysis_type,
+							  temperature)
 
 	actr_model_ep = actr_model(decay,
 							  max_activation,
@@ -398,18 +401,21 @@ if __name__ == '__main__':
 							  type_raising_rules,
 							  null_mapping,
 							  max_iters,
-							  reanalysis_type)
+							  reanalysis_type,
+							  temperature
+							  )
 
 	# print(actr_model_wd.lexical_null_act['defendant'])
 
-	partial_states = [{'left': 'DP', 'right': 'PP', 'combinator': '/'}, {'left': 'TP', 'right': 'DP', 'combinator': '/'}, {'left': 'end', 'right': '', 'combinator': ''}]
+	# partial_states = [{'left': 'DP', 'right': 'PP', 'combinator': '/'}, {'left': 'TP', 'right': 'DP', 'combinator': '/'}, {'left': 'end', 'right': '', 'combinator': ''}]
+	partial_states = []
 	with open(fname) as f:
 		for line in f:
 			print(line)
 			if 'WD' in models:
-				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=print_stages)
+				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=False)
 				while parse_states == None:
-					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=print_stages)
+					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_wd, line, end_states=partial_states, print_stages=False)
 				if print_tags: print('WD', supertags)
 
 			if 'WD2' in models:
@@ -419,9 +425,9 @@ if __name__ == '__main__':
 				if print_tags: print('WD2', supertags)
 
 			if 'EP' in models:
-				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=print_stages)
+				parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=False)
 				while parse_states == None:
-					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=print_stages)
+					parse_states, supertags, words, act_vals = supertag_sentence(actr_model_ep, line, end_states=partial_states, print_stages=False)
 				if print_tags: print('EP', supertags)
 			print()
 
