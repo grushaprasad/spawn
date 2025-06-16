@@ -8,32 +8,247 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 library(tidyverse)
 
-setwd('/home/gprasad/SPAWN/spawn/')
-outdir='/datalake/CLaP/SPAWN/CoNLL2024/preprocessed/'
+dir <- "../../CoNLL2024/brms_objects/"
 
+base_size <- 16
+theme_set(theme_bw(base_size = base_size) +
+            theme(panel.grid.major=element_blank(),
+                  panel.grid.minor=element_blank(),
+                  axis.text.x=element_text(size=rel(1))))
 
 ```
+
+# Human empirical plots
+
+## Plots
+
+```{r}
+
+human_postsumm <- readRDS(paste0(dir, 'postsumm_human.rds'))
+
+ggplot(human_postsumm,
+       aes(y=mean_prob, x=cond, color=cond, shape=cond)) +
+  geom_point(position=position_dodge(.9), size=3) + 
+  geom_errorbar(aes(ymin=lower_prob, ymax=upper_prob),
+                width=.5,
+                position=position_dodge(.9))+
+  labs(x='# Prime', y='Mean P(RRC | prime, target prefix)')+ 
+  theme(panel.grid.major.y = element_line( size=.15, color="darkseagreen" ),
+        legend.position = 'none'
+        )
+
+ggsave('priming-empirical.pdf', device = "pdf",
+       path = "../../CoNLL2024/plots/",
+       width = 4.5, height = 4, units = "in")
+```
+
+## Model estimates and Bayes Factors
+
+```{r}
+
+human_fit <- readRDS(paste0(dir,'brmsfit_human.rds'))
+
+summary(human_fit)
+```
+
+```{r}
+
+bf_human_fit <- readRDS(paste0(dir,'bf_human.rds'))
+bf_human_fit
+```
+
+# Model predicted plots
+
+## Plots from Bayesian Posterior samples
+
+```{r}
+
+train <- c('train0.0', 'train0.1', 'train1.0')
+models <- c('ep', 'wd2')
+reanalysis <- c('start', 'uncertainty1', 'uncertainty10')
+giveup <- 'giveup100'
+noise <- 'sdnormal-0.35-1.0'
+
+print(getwd())
+
+dir <- "../../CoNLL2024/brms_objects/"
+
+bayes_dat_list <- list()
+i <- 1
+for(t in train){
+  for(m in models){
+    for(r in reanalysis){
+      fname <- paste0(dir,paste('postsumm', m, t, r, noise, giveup, sep='_'), '.rds')
+      bayes_dat_list[[i]] <- readRDS(fname)
+      i <- i+1
+    }
+  }
+}
+
+bayes_dat <- dplyr::bind_rows(bayes_dat_list) %>%
+  mutate(train = ifelse(train=='train0.0', '0', ifelse(train=='train0.1', '100', '1000')),
+         reanalysis = ifelse(reanalysis=='start', 'First-word regression',
+                             ifelse(reanalysis=='uncertainty1', 'Entropy-weighted\nregression (temp=1)',
+                                    'Entropy-weighted\nregression (temp=10)')),
+         model = ifelse(model=='ep', 'Participial-Phase', 'Whiz-Deletion'))
+
+```
+
+```{r}
+
+ggplot(bayes_dat, aes(y = mean_prob, x=train,color=cond, shape=cond)) +
+  geom_point(position = position_dodge(0.65), size=2) + 
+  facet_grid(model~reanalysis) + 
+  geom_errorbar(aes(ymin=lower_prob, ymax=upper_prob), width=.5,
+                 position=position_dodge(0.65)) + 
+  labs(x='# Training sentences', y='Mean P(RRC | prime, target prefix)', 
+       color='Prime', shape='Prime')+ 
+  theme(panel.grid.major.y = element_line( size=.15, color="darkseagreen" ),
+        legend.position = 'top'
+        )
+
+dir <- "/Users/grushaprasad/Documents/Research/Dissertation/CoNLL2024/plots"
+ggsave('preds-giveup100-sdnormal1.pdf', device = "pdf", path = dir, width = 8, height = 5, units = "in")
+```
+
 
 ## Plots from raw proportions
 
 ```{r}
 
 ## Load data
-raw_combined_summ <- read.csv(paste0(outdir,'raw_combined_summ.csv'))
+print(getwd())
+
+raw_fpath <- '../../CoNLL2024/preprocessed/raw_combined_summ.csv'
+
+raw_combined_summ <- read.csv(raw_fpath)%>%
+  mutate(prime_type = factor(prime_type, levels = c('rrc', 'prog_rrc',
+                                                    'urc', 'amv')))  %>%
+  mutate(train = ifelse(train=='train0.0',
+                        '0',
+                        ifelse(train=='train0.1',
+                               '100',
+                               '1000')),
+         reanalysis = ifelse(reanalysis=='start',
+                             'First-word regression',
+                             ifelse(reanalysis=='uncertainty1',
+                                    'Entropy-weighted\nregression (temp=1)',
+                                    'Entropy-weighted\nregression (temp=10)')),
+         model = ifelse(model=='ep',
+                        'Participial-Phase',
+                        ifelse(model=='wd2',
+                               'Whiz-Deletion\n(separate null\naux and comp)',
+                               'Whiz-Deletion\n(combined null\naux and comp)')),
+         prime_type = ifelse(prime_type == 'rrc',
+                             'RRC', 
+                             ifelse(prime_type == 'urc',
+                                    'FRC',
+                                    ifelse(prime_type == 'prog_rrc',
+                                           'ProgRRC', 
+                                           'AMV'))),
+         prime_type = factor(prime_type, levels = c('RRC', 'ProgRRC',
+                                                    'FRC', 'AMV'))) %>%
+  mutate(upper_prob = prop_passive + 2*se_passive,
+         lower_prob = prop_passive - 2*se_passive,
+         type='Raw proportions') %>%
+  rename(mean_prob = prop_passive,
+         cond = prime_type) %>%
+  select(cond,train, model, reanalysis, sd, giveup,
+         mean_prob, lower_prob, upper_prob, type)
+
+
+combined_summ <- bayes_dat %>%
+  mutate(type='Posterior estimates',
+         model = ifelse(model == 'Whiz-Deletion',
+                        'Whiz-Deletion\n(separate null\naux and comp)',
+                        model)) %>%
+  select(cond,train, model, reanalysis, sd, giveup,
+         mean_prob, lower_prob, upper_prob, type) %>%
+  dplyr::bind_rows(raw_combined_summ) %>%
+  mutate(type = factor(type, levels = c('Raw proportions', 'Posterior estimates')))
+
+# raw_combined_summ$type <- 'raw'
+# bayes_dat$type <- 'bayes'
+
+
+```
+
+```{r}
+
+ggplot(combined_summ %>%
+         filter(sd == 'sduniform-0.2-0.5',
+                ),
+       aes(y=mean_prob, x=train, color=cond, shape=cond)) +
+  geom_point(position=position_dodge(0.65), size=2.5) +
+  # scale_x_discrete(expand = c(0.01, 0.5)) + 
+  geom_errorbar(aes(ymin=lower_prob, ymax=upper_prob),
+                width=.65,
+                position=position_dodge(0.65)) +
+  facet_grid(model~reanalysis+giveup)  + 
+  labs(x='# Training sentences', y='Raw Mean P(RRC | prime, target prefix)',
+       color='Prime', shape='Prime')+ 
+  theme(panel.grid.major.y = element_line( size=.15, color="darkseagreen" ),
+        legend.position = 'top'
+        )
+ggsave('allpreds-sduniform.pdf', device = "pdf", path = dir, width = 13, height = 7, units = "in")
+```
+
+```{r}
+
+ggplot(combined_summ %>%
+         filter(sd == 'sdnormal-0.35-1.0',
+                ),
+       aes(y=mean_prob, x=train, color=cond, shape=cond, alpha=type, group=cond)) +
+  geom_point(position=position_dodge(0.65), size=2) +
+  scale_alpha_manual(values=c(1, 0.4)) + 
+  # scale_x_discrete(expand = c(0.01, 0.5)) + 
+  geom_errorbar(aes(ymin=lower_prob, ymax=upper_prob),
+                width=.65,
+                position=position_dodge(0.65)) +
+  facet_grid(model~reanalysis+giveup)  + 
+  labs(x='# Training sentences', y='Raw Mean P(RRC | prime, target prefix)',
+       color='Prime', shape='Prime', alpha='Estimate type')+ 
+  theme(panel.grid.major.y = element_line( size=.15, color="darkseagreen" ),
+        legend.position = 'top'
+        )
+ggsave('allpreds-sdnormal1.pdf', device = "pdf", path = dir, width = 13, height = 7, units = "in")
+
 
 ```
 
 ```{r}
 
 ggplot(raw_combined_summ %>%
-         filter(giveup=='giveup100',
-                sd == 'sduniform-0.2-0.5'),
-       aes(y=prop_passive, x=train, color=prime_type)) +
-  geom_point() + 
+         filter(giveup=='giveup1000',
+                sd == 'sdnormal-0.35-1.0'),
+       aes(y=mean_prob, x=train, color=cond, shape=type, alpha=type, group=cond)) +
+  scale_alpha_manual(values=c(1, 0.4)) +
+  scale_x_discrete(expand = c(0.01, 0.5)) +
+  geom_point(position=position_dodge(.9)) + 
+  geom_errorbar(aes(ymin=lower_prob, ymax=upper_prob),
+                width=.75,
+                position=position_dodge(.9)) +
   facet_grid(model~reanalysis)
+
 
 ```
 
 
-## Plots from Bayesian Posterior samples
+### Getting number of models in each type
+```{r}
+
+main_fig_models <- read.csv(raw_fpath) %>%
+  filter(giveup=='giveup1000',
+         sd == 'sdnormal-0.35-1.0',
+         model != 'wd') %>%
+  group_by(train,model,reanalysis) %>%
+  summarise(n=sum(n)/24,#24 target trials
+            prop_passive = n/1280, #1280 model instances
+            prop_notpassive = 1-prop_passive) 
+
+## Models that did not generate even one passive continuation
+round(median(main_fig_models$prop_notpassive)*100)
+round(mean(main_fig_models$prop_notpassive)*100)
+```
+
 
